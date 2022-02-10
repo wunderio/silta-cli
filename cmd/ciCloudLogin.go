@@ -205,7 +205,7 @@ var cloudLoginCmd = &cobra.Command{
 			}
 
 			command = fmt.Sprintf("az login --service-principal --username '%s' --tenant '%s' --password '%s';", aksSPAppID, aksTenantID, aksSPPass)
-			command += fmt.Sprintf("az aks get-credentials --only-show-errors --resource-group '%s' --name '%s'", aksResourceGroup, clusterName)
+			command += fmt.Sprintf("az aks get-credentials --only-show-errors --resource-group '%s' --name '%s' --admin", aksResourceGroup, clusterName)
 		}
 
 		// Execute login commands
