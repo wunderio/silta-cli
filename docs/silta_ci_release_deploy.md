@@ -13,7 +13,7 @@ silta ci release deploy [flags]
       --chart-name string               Chart name
       --chart-repository string         Chart repository
       --chart-version string            Deploy a specific chart version
-      --cluster-domain string           Base domain for cluster urls (i.e. silta.wdr.io)
+      --cluster-domain string           Base domain for cluster urls (i.e. dev.example.com)
       --cluster-type string             Cluster type (i.e. gke, aws, aks, other)
       --db-root-pass string             Database password for root account
       --db-user-pass string             Database password for user account
