@@ -1,0 +1,46 @@
+name: Build silta cli binary on release creation
+
+on:
+  release:
+    types: [created]
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  tests-matrix:
+    name: Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: [amd64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.6
+      - name: Run tests
+        run: go test -v ./tests
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    needs: tests-matrix
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: [amd64]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - uses: wangyoucao577/go-release-action@v1.24
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "https://go.dev/dl/go1.17.6.${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
+          binary_name: "silta"
+          ldflags: "-X github.com/wunderio/silta-cli/internal/common.Version=${{ steps.vars.outputs.tag }}"

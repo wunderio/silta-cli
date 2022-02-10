@@ -102,12 +102,6 @@ func TestImageUrlCmd(t *testing.T) {
 	testString = `foo.bar/silta/baz-nginx:qux`
 	CliExecTest(t, command, environment, testString, true)
 
-	// Checksum calculation test
-	command = "ci image url --image-repo-host 'foo.bar' --image-repo-project 'silta' --namespace 'baz' --image-identifier 'nginx' --dockerfile 'tests/nginx.Dockerfile'"
-	environment = []string{}
-	testString = `foo.bar/silta/baz-nginx:6d2304e6e2bfe938b70f059944fc567bfdd37903`
-	CliExecTest(t, command, environment, testString, true)
-
 	// Change dir back to previous
 	os.Chdir(wd)
 }
@@ -127,12 +121,6 @@ func TestImageBuildCmd(t *testing.T) {
 	command = "ci image build --image-repo-host 'foo.bar' --image-repo-project 'silta' --namespace 'baz' --image-identifier 'nginx' --dockerfile 'tests/nginx.Dockerfile' --image-tag=qux --debug"
 	environment = []string{}
 	testString = `docker push 'foo.bar/silta/baz-nginx:qux'`
-	CliExecTest(t, command, environment, testString, false)
-
-	// // Checksum calculation test
-	command = "ci image build --image-repo-host 'foo.bar' --image-repo-project 'silta' --namespace 'baz' --image-identifier 'nginx' --dockerfile 'tests/nginx.Dockerfile' --debug"
-	environment = []string{}
-	testString = `docker build --tag 'foo.bar/silta/baz-nginx:6d2304e6e2bfe938b70f059944fc567bfdd37903'  -f 'tests/nginx.Dockerfile' /tmp/empty`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Change dir back to previous

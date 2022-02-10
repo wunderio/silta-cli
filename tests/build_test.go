@@ -13,10 +13,10 @@ func TestBuild(t *testing.T) {
 	wd, _ := os.Getwd()
 	os.Chdir("..")
 
-	make := exec.Command("make", "build")
-	err := make.Run()
+	out, err := exec.Command("bash", "-c", "make build").CombinedOutput()
+	fmt.Printf("Output: %s\n", out)
 	if err != nil {
-		fmt.Printf("could not make binary for %s: %v", cliBinaryName, err)
+		fmt.Printf("Could not make binary for %s: %v", cliBinaryName, err)
 		os.Exit(1)
 	}
 
