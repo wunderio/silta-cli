@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,7 +16,7 @@ func CliExecTest(t *testing.T, command string, environment []string, testString 
 	// cliBinaryName = "go run main.go"
 	// environment = os.Environ()
 
-	fmt.Printf("%s", command)
+	// fmt.Printf("%s", command)
 
 	cmd := exec.Command("bash", "-c", cliBinaryName+" "+command)
 
@@ -35,17 +34,17 @@ func CliExecTest(t *testing.T, command string, environment []string, testString 
 	cmd.Run()
 
 	if equals == true {
-		if out.String() != testString && err.String() != testString {
-
+		if out.String() == testString || err.String() == testString {
+		} else {
 			t.Logf("Error: %s", err.String())
-			t.Errorf("Expected :\n '%s' \n Received: \n '%s'", testString, out.String())
+			t.Errorf("Expected :\n '%s' \n Received: \n '%s'\n'%s'", testString, out.String(), err.String())
 		}
 
 	} else {
-		if !strings.Contains(out.String(), testString) && !strings.Contains(err.String(), testString) {
-
+		if strings.Contains(out.String(), testString) || strings.Contains(err.String(), testString) {
+		} else {
 			t.Logf("Error: %s", err.String())
-			t.Errorf("Expected :\n '%s' \n Received: \n '%s'", testString, out.String())
+			t.Errorf("Expected :\n '%s' \n Received: \n '%s'\n'%s'", testString, out.String(), err.String())
 		}
 	}
 }

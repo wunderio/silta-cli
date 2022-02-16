@@ -1,3 +1,4 @@
 silta
 silta-cli
 auth-test.sh
+tests/test-secret*
