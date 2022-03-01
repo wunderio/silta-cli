@@ -165,9 +165,9 @@ var cloudLoginCmd = &cobra.Command{
 
 			resourceLocation := ""
 			if len(gcpComputeRegion) > 0 {
-				resourceLocation = fmt.Sprintf("--region", gcpComputeRegion)
+				resourceLocation = fmt.Sprint("--region", gcpComputeRegion)
 			} else if len(gcpComputeZone) > 0 {
-				resourceLocation = fmt.Sprintf("--zone", gcpComputeZone)
+				resourceLocation = fmt.Sprint("--zone", gcpComputeZone)
 			}
 
 			// Updates a kubeconfig file with appropriate credentials and endpoint information.
