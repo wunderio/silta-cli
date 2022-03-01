@@ -11,6 +11,7 @@ import (
 var editChartCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Edit charts",
+	Long:  "Adds subcharts to main chart file. The chart must be unzipped beforehand.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		deploymentFlag, _ := cmd.Flags().GetString("subchart-list-file")
