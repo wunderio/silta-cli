@@ -3,6 +3,7 @@ package common
 import (
 	"io/ioutil"
 	"log"
+	"os/exec"
 
 	"gopkg.in/yaml.v2"
 )
@@ -41,11 +42,11 @@ func ReadChartDefinition(chartFile string) chartDefinition {
 }
 
 func AppendExtraCharts(charts *chartList, mainchart *chartDefinition) {
+
 	if len(charts.Charts) < 1 {
 		return
 	}
 	mainchart.Dependencies = append(mainchart.Dependencies, charts.Charts...)
-
 }
 
 func WriteChartDefinition(mainchart chartDefinition, ymlfile string) {
@@ -58,6 +59,17 @@ func WriteChartDefinition(mainchart chartDefinition, ymlfile string) {
 	err2 := ioutil.WriteFile(ymlfile, data, 0644)
 	if err2 != nil {
 		log.Fatal(err)
+	}
+}
+
+func DownloadUntarChart(chartName string) {
+
+	command := "helm pull " + chartName + " --untar"
+	helmCmd, err := exec.Command("bash", "-c", command).CombinedOutput()
+
+	if err != nil {
+		log.SetFlags(0) //remove timestamp
+		log.Fatal(string(helmCmd[:]))
 	}
 
 }
