@@ -9,8 +9,8 @@ import (
 )
 
 var editChartCmd = &cobra.Command{
-	Use:   "edit",
-	Short: "Edit charts",
+	Use:   "extend",
+	Short: "Extend charts",
 	Long:  "Adds subcharts to main chart file. The chart must be unzipped beforehand.",
 	Run: func(cmd *cobra.Command, args []string) {
 
