@@ -17,3 +17,8 @@ type dependency struct {
 	Repository string `yaml:"repository"`
 	Version    string `yaml:"version"`
 }
+
+type ChartNameVersion struct {
+	Name    string
+	Version string
+}

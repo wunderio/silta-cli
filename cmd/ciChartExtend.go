@@ -18,6 +18,7 @@ var editChartCmd = &cobra.Command{
 
 		deploymentFlag, _ := cmd.Flags().GetString("subchart-list-file")
 		chartName, _ := cmd.Flags().GetString("chart-name")
+		chartVersion, err1 := cmd.Flags().GetString("chart-version")
 		const innerChartFile = "/Chart.yaml"
 
 		if len(deploymentFlag) < 1 && len(chartName) < 1 {
@@ -38,9 +39,16 @@ var editChartCmd = &cobra.Command{
 			chartExistsLocally = false
 		}
 
+		c := common.ChartNameVersion{Name: chartName}
+		if err1 == nil {
+			c.Version = chartVersion
+		} else {
+			c.Version = ""
+		}
+
 		p := strings.SplitN(chartUrl.Path, "/", 2)
 		if len(p) > 1 && chartExistsLocally == false && p[0] != "." {
-			common.DownloadUntarChart(chartName)
+			common.DownloadUntarChart(&c)
 			var l = common.ReadCharts(deploymentFlag)
 			var d = common.ReadChartDefinition(p[1] + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
@@ -59,5 +67,6 @@ func init() {
 	ciChartCmd.AddCommand(editChartCmd)
 	// Local flags
 	editChartCmd.Flags().String("subchart-list-file", "", "Location of custom chart YAML file")
-	editChartCmd.Flags().String("chart-name", "", "Chart to edit")
+	editChartCmd.Flags().String("chart-name", "", "Source chart")
+	editChartCmd.Flags().String("chart-version", "", "Chart version")
 }

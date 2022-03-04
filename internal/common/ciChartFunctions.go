@@ -62,9 +62,14 @@ func WriteChartDefinition(mainchart chartDefinition, ymlfile string) {
 	}
 }
 
-func DownloadUntarChart(chartName string) {
+func DownloadUntarChart(chartName *ChartNameVersion) {
 
-	command := "helm pull " + chartName + " --untar"
+	command := ""
+	if len(chartName.Version) < 1 {
+		command = "helm pull " + chartName.Name + " --untar"
+	} else {
+		command = "helm pull " + chartName.Name + " --version " + chartName.Version + " --untar"
+	}
 	helmCmd, err := exec.Command("bash", "-c", command).CombinedOutput()
 
 	if err != nil {
