@@ -99,6 +99,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			// TODO: Create namespace if it doesn't exist
 			// & tag the namespace if it isn't already tagged.
 			// TODO: Rewrite
+
 			command := fmt.Sprintf(`
 					# Deployed chart version
 					NAMESPACE='%s'

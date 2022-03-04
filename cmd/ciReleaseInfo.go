@@ -23,8 +23,6 @@ Difference between "--project-reponame" and "--namespace" is that project-repona
 but namespace is normalized lowercase version of it.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("ciReleaseInfo called")
-
 		releaseName, _ := cmd.Flags().GetString("release-name")
 		namespace, _ := cmd.Flags().GetString("namespace")
 		githubToken, _ := cmd.Flags().GetString("github-token")
@@ -62,16 +60,16 @@ but namespace is normalized lowercase version of it.
 				CIRCLE_PROJECT_USERNAME='%s'
 				CIRCLE_PROJECT_REPONAME='%s'
 				
-				if [ -n "$GITHUB_TOKEN" ]
+				if [ -n "${GITHUB_TOKEN}" ]
 				then
-					RELEASE_NOTES=$(helm -n "$NAMESPACE" get notes "$RELEASE_NAME")
-					if [ -z "$CIRCLE_PR_NUMBER" ]
+					RELEASE_NOTES=$(helm -n "${NAMESPACE}" get notes "${RELEASE_NAME}")
+					if [ -z "${CIRCLE_PR_NUMBER}" ]
 					then
 						CIRCLE_PR_NUMBER="${CIRCLE_PULL_REQUEST//[^0-9]/}"
 					fi
-					GITHUB_API_URL="https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$CIRCLE_PR_NUMBER/comments"
-					FORMATTED_NOTES=$(echo "$RELEASE_NOTES" | sed 's/\\/\\\\/g' | sed 's/"/\\\"/g' | sed 's/\$/\\n/g' | sed 's/\//\\\//g')
-					curl -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -X POST -d '{"body": "<details><summary>Release notes for '$RELEASE_NAME'</summary>'"${FORMATTED_NOTES//$'\n'/'\n'}"'</details>"}' $GITHUB_API_URL
+					GITHUB_API_URL="https://api.github.com/repos/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/issues/${CIRCLE_PR_NUMBER}/comments"
+					FORMATTED_NOTES=$(echo "${RELEASE_NOTES}" | sed 's/\\/\\\\/g' | sed 's/"/\\\"/g' | sed 's/\$/\\n/g' | sed 's/\//\\\//g')
+					curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" -X POST -d '{"body": "<details><summary>Release notes for '${RELEASE_NAME}'</summary>'"${FORMATTED_NOTES//$'\n'/'\n'}"'</details>"}' ${GITHUB_API_URL}
 				fi
 				`, namespace, releaseName, githubToken, circlePrNumber, circlePullRequest, circleProjectUsername, circleProjectReponame)
 		pipedExec(command, debug)
@@ -80,10 +78,9 @@ but namespace is normalized lowercase version of it.
 				NAMESPACE='%s'
 				RELEASE_NAME='%s'
 				# Display only the part following NOTES from the helm status.
-				helm -n "$NAMESPACE" get notes "$RELEASE_NAME"
+				helm -n "${NAMESPACE}" get notes "${RELEASE_NAME}"
 			`, namespace, releaseName)
 		pipedExec(command, debug)
-
 	},
 }
 

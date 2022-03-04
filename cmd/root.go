@@ -57,8 +57,6 @@ func pipedExec(command string, debug bool) {
 		fmt.Printf("Command (not executed): %s\n", command)
 	} else {
 
-		fmt.Printf("> %s\n", command)
-
 		// Flush exec output buffers since this might take a while
 		cmd := exec.Command("bash", "-c", command)
 

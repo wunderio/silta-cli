@@ -25,7 +25,7 @@ var ciImageBuildCmd = &cobra.Command{
 		imageIdentifier, _ := cmd.Flags().GetString("image-identifier")
 		imageTag, _ := cmd.Flags().GetString("image-tag")
 		dockerfile, _ := cmd.Flags().GetString("dockerfile")
-		// reuseExisting, _ := cmd.Flags().GetBool("image-reuse")
+		reuseExisting, _ := cmd.Flags().GetBool("image-reuse")
 		buildPath, _ := cmd.Flags().GetString("build-path")
 
 		// Use environment variables as fallback
@@ -43,9 +43,6 @@ var ciImageBuildCmd = &cobra.Command{
 				namespace = os.Getenv("NAMESPACE")
 			}
 		}
-
-		// TODO:
-		// fmt.Printf("TODO: reuse existing image: %t", reuseExisting)
 
 		imageUrl := fmt.Sprintf("%s/%s/%s-%s", imageRepoHost, imageRepoProject, namespace, imageIdentifier)
 
@@ -96,6 +93,38 @@ var ciImageBuildCmd = &cobra.Command{
 			reg, _ := regexp.Compile("[^[:alnum:]]")
 			branchName = reg.ReplaceAllString(branchName, "-")
 			extraImageTag = fmt.Sprintf("--tag '%s:%s'", imageUrl, branchName)
+		}
+
+		// TODO: reuseExisting
+
+		if !debug {
+			if reuseExisting {
+				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") {
+					command := fmt.Sprintf("gcloud container images list-tags '%s' | grep -q '%s';", imageUrl, imageTag)
+					err := exec.Command("bash", "-c", command).Run()
+					if err == nil {
+						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						return
+					}
+				} else if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
+					command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, imageTag)
+					err := exec.Command("bash", "-c", command).Run()
+					if err == nil {
+						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						return
+					}
+				} else if strings.HasSuffix(imageRepoHost, ".azurecr.io") {
+
+					imageUrl := fmt.Sprintf("%s/%s/%s-%s", imageRepoHost, imageRepoProject, namespace, imageIdentifier)
+
+					command := fmt.Sprintf("az acr repository show --name '%s' --image '%s/%s-%s:%s' --only-show-errors 2>&1 > /dev/null", imageRepoHost, imageRepoProject, namespace, imageIdentifier, imageTag)
+					err := exec.Command("bash", "-c", command).Run()
+					if err == nil {
+						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						return
+					}
+				}
+			}
 		}
 
 		// Run docker build
