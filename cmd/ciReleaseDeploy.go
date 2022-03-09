@@ -192,10 +192,12 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 			// Disable reference data if the required volume is not present.
 			referenceDataOverride := ""
-			command = fmt.Sprintf("kubectl get persistentvolume | grep --extended-regexp '%s/.*-reference-data'", namespace)
-			err := exec.Command("bash", "-c", command).Run()
-			if err != nil {
-				referenceDataOverride = "--set referenceData.skipMount=true"
+			if debug == false {
+				command = fmt.Sprintf("kubectl get persistentvolume | grep --extended-regexp '%s/.*-reference-data'", namespace)
+				err := exec.Command("bash", "-c", command).Run()
+				if err != nil {
+					referenceDataOverride = "--set referenceData.skipMount=true"
+				}
 			}
 
 			// Override Database credentials if specified

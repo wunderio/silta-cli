@@ -149,7 +149,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				 \
 				 \
 				 \
-				--set referenceData.skipMount=true \
+				 \
 				--namespace='default' \
 				--values '' \
 				--timeout '15m' &> helm-output.log & pid=$!`
@@ -199,7 +199,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--set cluster.type='16' \
 				--set mariadb.rootUser.password='17' \
 				--set mariadb.db.password='18' \
-				--set referenceData.skipMount=true \
+				 \
 				--namespace='19' \
 				--values '20' \
 				--timeout '21' &> helm-output.log & pid=$!`
