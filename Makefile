@@ -1,6 +1,6 @@
-VERSION=$(shell cat VERSION 2> /dev/null || echo "custom")
+VERSION=$(shell cat VERSION 2> /dev/null || echo "custom-`date +%Y-%m-%d-%H-%M`" )
 
-all: build test upload
+all: build test
 
 build:
 	go mod download
@@ -9,9 +9,8 @@ build:
 test:
 	go test ./tests
 
-upload:
-	gsutil cp ./silta gs://silta-cli-test/
-	gsutil setmeta -h "Cache-Control: no-store, max-age=10" "gs://silta-cli-test/silta"
+install:
+	cp ./silta ~/.local/bin/silta
 
 clean:
 	go clean -r -x

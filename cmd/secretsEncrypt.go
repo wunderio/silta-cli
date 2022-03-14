@@ -35,11 +35,15 @@ var secretsEncryptCmd = &cobra.Command{
 			fmt.Println("No input files supplied")
 			return
 		}
+		if len(secretKey) == 0 {
+			fmt.Println("No secret key provided")
+			return
+		}
 
 		fmt.Printf("Encrypting %s\n", file)
 
 		// Read file
-		decryptedMsg, err := os.ReadFile(file)
+		decryptedMsg, _ := os.ReadFile(file)
 
 		// Verify file state
 		if strings.HasPrefix(string(decryptedMsg), "Salted") {
