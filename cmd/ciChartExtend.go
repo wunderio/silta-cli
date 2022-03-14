@@ -69,4 +69,7 @@ func init() {
 	editChartCmd.Flags().String("subchart-list-file", "", "Location of custom chart YAML file")
 	editChartCmd.Flags().String("chart-name", "", "Source chart")
 	editChartCmd.Flags().String("chart-version", "", "Chart version")
+
+	editChartCmd.MarkFlagRequired("subchart-list-file")
+	editChartCmd.MarkFlagRequired("chart-name")
 }
