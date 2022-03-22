@@ -36,20 +36,16 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useEnv, "use-env", true, "Use environment variables for value assignment")
 }
 
-func bufferedExec(command string, debug bool) string {
-	out := ""
-
+func bufferedExec(command string, debug bool) {
 	if debug == true {
-		out = fmt.Sprintf("Command (not executed): %s\n", command)
+		fmt.Sprintf("Command (not executed): %s\n", command)
 	} else {
 		out, err := exec.Command("bash", "-c", command).CombinedOutput()
+		fmt.Printf("%s\n", out)
 		if err != nil {
-			out = []byte(fmt.Sprintf("Output: %s\n", out))
-			out = []byte(fmt.Sprintf("Error: %x\n", err))
+			log.Fatal("Error: ", err)
 		}
 	}
-
-	return out
 }
 
 func pipedExec(command string, debug bool) {

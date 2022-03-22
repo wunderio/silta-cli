@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
@@ -37,6 +38,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 		chartName, _ := cmd.Flags().GetString("chart-name")
 		chartRepository, _ := cmd.Flags().GetString("chart-repository")
 		siltaConfig, _ := cmd.Flags().GetString("silta-config")
+		helmFlags, _ := cmd.Flags().GetString("helm-flags")
 		deploymentTimeout, _ := cmd.Flags().GetString("deployment-timeout")
 
 		// Use environment variables as fallback
@@ -74,7 +76,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 			if len(clusterDomain) == 0 {
 				clusterDomain = os.Getenv("CLUSTER_DOMAIN")
 			}
-
 		}
 
 		if len(deploymentTimeout) == 0 {
@@ -84,7 +85,94 @@ var ciReleaseDeployCmd = &cobra.Command{
 			chartRepository = "https://storage.googleapis.com/charts.wdr.io"
 		}
 
-		if chartName == "drupal" {
+		// TODO: Create namespace if it doesn't exist
+		// & tag the namespace if it isn't already tagged.
+		// TODO: Rewrite
+
+		command := fmt.Sprintf(`
+				# Deployed chart version
+				NAMESPACE='%s'
+
+				# Create the namespace if it doesn't exist.
+				if ! kubectl get namespace "$NAMESPACE" &>/dev/null ; then
+					kubectl create namespace "$NAMESPACE"
+				fi
+
+				# Tag the namespace if it isn't already tagged.
+				if ! kubectl get namespace -l name=$NAMESPACE --no-headers | grep $NAMESPACE &>/dev/null ; then
+					kubectl label namespace "$NAMESPACE" "name=$NAMESPACE" --overwrite
+				fi
+
+			`, namespace)
+		pipedExec(command, debug)
+
+		if debug == false {
+			// Add helm repositories
+			command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
+			exec.Command("bash", "-c", command).Run()
+
+			// Delete existing jobs to prevent getting wrong log output
+			command = fmt.Sprintf("kubectl delete job '%s-post-release' --namespace '%s' --ignore-not-found", releaseName, namespace)
+			exec.Command("bash", "-c", command).Run()
+		}
+
+		if chartName == "simple" || strings.HasSuffix(chartName, "/simple") {
+
+			if len(nginxImageUrl) == 0 {
+				log.Fatal("Nginx image url required (nginx-image-url)")
+			}
+
+			// Chart value overrides
+
+			// Skip basic auth for internal VPN if defined in environment
+			extraNoAuthIPs := ""
+			if len(vpnIP) > 0 {
+				extraNoAuthIPs = fmt.Sprintf("--set nginx.noauthips.vpn='%s/32'", vpnIP)
+			}
+
+			// Pass VPC-native setting if defined in environment
+			vpcNativeOverride := ""
+			if len(vpcNative) > 0 {
+				vpcNativeOverride = fmt.Sprintf("--set cluster.vpcNative='%s'", vpcNative)
+			}
+
+			// Add cluster type if defined in environment
+			extraClusterType := ""
+			if len(clusterType) > 0 {
+				extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
+			}
+
+			// Allow pinning a specific chart version
+			chartVersionOverride := ""
+			if len(chartVersion) > 0 {
+				chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
+			}
+
+			// helm release
+			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
+				--repo '%s' \
+				%s \
+				--cleanup-on-fail \
+				--set environmentName='%s' \
+				--set silta-release.branchName='%s' \
+				--set nginx.image='%s' \
+				--set clusterDomain='%s' \
+				%s \
+				%s \
+				%s \
+				--namespace='%s' \
+				--values '%s' \
+				%s \
+				--wait`,
+				releaseName, chartName, chartRepository, chartVersionOverride,
+				siltaEnvironmentName, branchname, nginxImageUrl,
+				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
+				namespace, siltaConfig, helmFlags)
+			pipedExec(command, debug)
+
+		}
+
+		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
 			if len(phpImageUrl) == 0 {
 				log.Fatal("PHP image url required (php-image-url)")
@@ -95,27 +183,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 			if len(shellImageUrl) == 0 {
 				log.Fatal("Shell image url required (shell-image-url)")
 			}
-
-			// TODO: Create namespace if it doesn't exist
-			// & tag the namespace if it isn't already tagged.
-			// TODO: Rewrite
-
-			command := fmt.Sprintf(`
-					# Deployed chart version
-					NAMESPACE='%s'
-
-					# Create the namespace if it doesn't exist.
-					if ! kubectl get namespace "$NAMESPACE" &>/dev/null ; then
-						kubectl create namespace "$NAMESPACE"
-					fi
-
-					# Tag the namespace if it isn't already tagged.
-					if ! kubectl get namespace -l name=$NAMESPACE --no-headers | grep $NAMESPACE &>/dev/null ; then
-						kubectl label namespace "$NAMESPACE" "name=$NAMESPACE" --overwrite
-					fi
-
-				`, namespace)
-			pipedExec(command, debug)
 
 			// Special updates
 			// TODO: Rewrite
@@ -152,7 +219,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 					if [[ "$failed_revision" -eq 1 ]]; then
 						# Remove any existing post-release hook, since it's technically not part of the release.
-						kubectl delete job -n "$NAMESPACE" "$RELEASE_NAME-post-release" 2> /dev/null || true
+						kubectl delete job -n "$NAMESPACE" "$RELEASE_NAME-post-release --ignore-not-found" 2> /dev/null || true
 
 						echo "Removing failed first release."
 						helm delete -n "$NAMESPACE" "$RELEASE_NAME"
@@ -178,16 +245,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 					fi
 				`, namespace, releaseName)
 			pipedExec(command, debug)
-
-			if debug == false {
-				// Add helm repositories
-				command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
-				exec.Command("bash", "-c", command).Run()
-
-				// Delete existing jobs to prevent getting wrong log output
-				command = fmt.Sprintf("kubectl delete job '%s-post-release' --namespace '%s' --ignore-not-found", releaseName, namespace)
-				exec.Command("bash", "-c", command).Run()
-			}
 
 			// Chart value overrides
 
@@ -257,6 +314,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				%s \
 				--namespace='%s' \
 				--values '%s' \
+				%s \
 				--timeout '%s' &> helm-output.log & pid=$!
 
 				# TODO: Rewrite this part
@@ -315,7 +373,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				shellImageUrl, repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride, referenceDataOverride, namespace,
-				siltaConfig, deploymentTimeout,
+				siltaConfig, helmFlags, deploymentTimeout,
 				releaseName, namespace)
 			pipedExec(command, debug)
 
@@ -347,6 +405,7 @@ func init() {
 	ciReleaseDeployCmd.Flags().String("chart-name", "", "Chart name")
 	ciReleaseDeployCmd.Flags().String("chart-repository", "", "Chart repository")
 	ciReleaseDeployCmd.Flags().String("silta-config", "", "Silta release helm chart values")
+	ciReleaseDeployCmd.Flags().String("helm-flags", "", "Extra flags for helm release")
 	ciReleaseDeployCmd.Flags().String("deployment-timeout", "", "Helm deployment timeout")
 
 	ciReleaseDeployCmd.MarkFlagRequired("release-name")

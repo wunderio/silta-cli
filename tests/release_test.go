@@ -152,10 +152,11 @@ func TestReleaseDeployCmd(t *testing.T) {
 				 \
 				--namespace='default' \
 				--values '' \
+				 \
 				--timeout '15m' &> helm-output.log & pid=$!`
 	CliExecTest(t, command, environment, testString, false)
 
-	// Test all args
+	// Test all args (drupal chart)
 	command = `ci release deploy \
 		--release-name 1 \
 		--release-suffix 2 \
@@ -179,6 +180,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--namespace 19 \
 		--silta-config 20 \
 		--deployment-timeout 21 \
+		--helm-flags 22 \
 		--debug`
 	environment = []string{}
 	testString = `helm upgrade --install '1' 'drupal' \
@@ -202,7 +204,52 @@ func TestReleaseDeployCmd(t *testing.T) {
 				 \
 				--namespace='19' \
 				--values '20' \
+				22 \
 				--timeout '21' &> helm-output.log & pid=$!`
+	CliExecTest(t, command, environment, testString, false)
+
+	// Test all args (simple chart)
+	command = `ci release deploy \
+		--release-name 1 \
+		--release-suffix 2 \
+		--chart-name simple \
+		--chart-repository 3 \
+		--chart-version 4 \
+		--silta-environment-name 5 \
+		--branchname 6 \
+		--php-image-url 7 \
+		--nginx-image-url 8 \
+		--shell-image-url 9 \
+		--repository-url 10 \
+		--gitauth-username 11 \
+		--gitauth-password 12 \
+		--cluster-domain 13 \
+		--vpn-ip 14 \
+		--vpc-native 15 \
+		--cluster-type 16 \
+		--db-root-pass 17 \
+		--db-user-pass 18 \
+		--namespace 19 \
+		--silta-config 20 \
+		--deployment-timeout 21 \
+		--helm-flags 22 \
+		--debug`
+	environment = []string{}
+	testString = `helm upgrade --install '1' 'simple' \
+				--repo '3' \
+				--version '4' \
+				--cleanup-on-fail \
+				--set environmentName='5' \
+				--set silta-release.branchName='6' \
+				--set nginx.image='8' \
+				--set clusterDomain='13' \
+				--set nginx.noauthips.vpn='14/32' \
+				--set cluster.vpcNative='15' \
+				--set cluster.type='16' \
+				--namespace='19' \
+				--values '20' \
+				22 \
+				--wait`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Change dir back to previous

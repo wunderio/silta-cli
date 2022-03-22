@@ -100,17 +100,17 @@ var ciImageBuildCmd = &cobra.Command{
 		if !debug {
 			if reuseExisting {
 				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") {
-					command := fmt.Sprintf("gcloud container images list-tags '%s' | grep -q '%s';", imageUrl, imageTag)
+					command := fmt.Sprintf("gcloud container images list-tags '%s' | grep -q ' %s ';", imageUrl, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
-						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
 						return
 					}
 				} else if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
 					command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
-						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
 						return
 					}
 				} else if strings.HasSuffix(imageRepoHost, ".azurecr.io") {
@@ -120,7 +120,7 @@ var ciImageBuildCmd = &cobra.Command{
 					command := fmt.Sprintf("az acr repository show --name '%s' --image '%s/%s-%s:%s' --only-show-errors 2>&1 > /dev/null", imageRepoHost, imageRepoProject, namespace, imageIdentifier, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
-						fmt.Printf("Image %s/%s already exists, existing image will be used.", imageUrl, imageTag)
+						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
 						return
 					}
 				}

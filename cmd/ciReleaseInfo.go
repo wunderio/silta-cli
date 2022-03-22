@@ -80,7 +80,7 @@ but namespace is normalized lowercase version of it.
 				# Display only the part following NOTES from the helm status.
 				helm -n "${NAMESPACE}" get notes "${RELEASE_NAME}"
 			`, namespace, releaseName)
-		pipedExec(command, debug)
+		bufferedExec(command, debug)
 	},
 }
 
