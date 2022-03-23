@@ -100,7 +100,7 @@ var ciImageBuildCmd = &cobra.Command{
 		if !debug {
 			if reuseExisting {
 				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") {
-					command := fmt.Sprintf("gcloud container images list-tags '%s' | grep -q ' %s ';", imageUrl, imageTag)
+					command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json | grep -q '\"%s\"';", imageUrl, imageTag, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
 						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)

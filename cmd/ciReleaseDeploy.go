@@ -85,6 +85,42 @@ var ciReleaseDeployCmd = &cobra.Command{
 			chartRepository = "https://storage.googleapis.com/charts.wdr.io"
 		}
 
+		// Chart value overrides
+
+		// Override Database credentials if specified
+		dbRootPassOverride := ""
+		if len(dbRootPass) > 0 {
+			dbRootPassOverride = fmt.Sprintf("--set mariadb.rootUser.password='%s'", dbRootPass)
+		}
+		dbUserPassOverride := ""
+		if len(dbUserPass) > 0 {
+			dbUserPassOverride = fmt.Sprintf("--set mariadb.db.password='%s'", dbUserPass)
+		}
+
+		// Skip basic auth for internal VPN if defined in environment
+		extraNoAuthIPs := ""
+		if len(vpnIP) > 0 {
+			extraNoAuthIPs = fmt.Sprintf("--set nginx.noauthips.vpn='%s/32'", vpnIP)
+		}
+
+		// Pass VPC-native setting if defined in environment
+		vpcNativeOverride := ""
+		if len(vpcNative) > 0 {
+			vpcNativeOverride = fmt.Sprintf("--set cluster.vpcNative='%s'", vpcNative)
+		}
+
+		// Add cluster type if defined in environment
+		extraClusterType := ""
+		if len(clusterType) > 0 {
+			extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
+		}
+
+		// Allow pinning a specific chart version
+		chartVersionOverride := ""
+		if len(chartVersion) > 0 {
+			chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
+		}
+
 		// TODO: Create namespace if it doesn't exist
 		// & tag the namespace if it isn't already tagged.
 		// TODO: Rewrite
@@ -122,32 +158,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 				log.Fatal("Nginx image url required (nginx-image-url)")
 			}
 
-			// Chart value overrides
-
-			// Skip basic auth for internal VPN if defined in environment
-			extraNoAuthIPs := ""
-			if len(vpnIP) > 0 {
-				extraNoAuthIPs = fmt.Sprintf("--set nginx.noauthips.vpn='%s/32'", vpnIP)
-			}
-
-			// Pass VPC-native setting if defined in environment
-			vpcNativeOverride := ""
-			if len(vpcNative) > 0 {
-				vpcNativeOverride = fmt.Sprintf("--set cluster.vpcNative='%s'", vpcNative)
-			}
-
-			// Add cluster type if defined in environment
-			extraClusterType := ""
-			if len(clusterType) > 0 {
-				extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
-			}
-
-			// Allow pinning a specific chart version
-			chartVersionOverride := ""
-			if len(chartVersion) > 0 {
-				chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
-			}
-
 			// helm release
 			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
 				--repo '%s' \
@@ -169,7 +179,100 @@ var ciReleaseDeployCmd = &cobra.Command{
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				namespace, siltaConfig, helmFlags)
 			pipedExec(command, debug)
+		}
 
+		if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
+
+			// helm release
+			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
+				--repo '%s' \
+				%s \
+				--cleanup-on-fail \
+				--set environmentName='%s' \
+				--set silta-release.branchName='%s' \
+				--set shell.gitAuth.repositoryUrl='%s' \
+				--set shell.gitAuth.keyserver.username='%s' \
+				--set shell.gitAuth.keyserver.password='%s' \
+				--set clusterDomain='%s' \
+				--namespace='%s' \
+				%s \
+				%s \
+				%s \
+				%s \
+				%s \
+				--values '%s' \
+				%s \
+				--timeout '%s' &> helm-output.log & pid=$!
+
+				# TODO: Rewrite this part
+				RELEASE_NAME=%s
+				NAMESPACE=%s
+
+				echo -n "Waiting for containers to start"
+
+				TIME_WAITING=0
+				LOGS_SHOWN=false
+				while true; do
+					if [ $LOGS_SHOWN == false ] && kubectl get pod -l job-name="${RELEASE_NAME}-post-release" -n "${NAMESPACE}" --ignore-not-found | grep  -qE "Running|Completed" ; then
+					echo ""
+					echo "Deployment log:"
+					kubectl logs "job/${RELEASE_NAME}-post-release" -n "${NAMESPACE}" -f --timestamps=true || true
+					LOGS_SHOWN=true
+					fi
+
+					# Helm command is complete.
+					if ! ps -p "$pid" > /dev/null; then
+					if grep -q BackoffLimitExceeded helm-output.log ; then
+						# Don't show BackoffLimitExceeded, it confuses everyone.
+						show_failing_pods
+						echo "The post-release job failed, see log output above."
+					else
+						echo "Helm output:"
+						cat helm-output.log
+					fi
+					wait $pid
+					break
+					fi
+
+					if [ $TIME_WAITING -gt 300 ]; then
+					echo "Timeout waiting for resources."
+					show_failing_pods
+					exit 1
+					fi
+
+					echo -n "."
+					sleep 5
+					TIME_WAITING=$((TIME_WAITING+5))
+				done
+
+				# Wait for resources to be ready
+				# Get all deployments and statefulsets in the release and check the status of each one.
+				statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name)
+				if [ ! -z "$statefulsets" ]; then
+					echo "$statefulsets" | xargs -n 1 kubectl rollout status -n "$NAMESPACE"
+				fi
+				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE"
+				`,
+				releaseName, chartName, chartRepository, chartVersionOverride,
+				siltaEnvironmentName, branchname,
+				repositoryUrl, gitAuthUsername, gitAuthPassword,
+				clusterDomain, namespace,
+				extraNoAuthIPs, vpcNativeOverride, extraClusterType,
+				dbRootPassOverride, dbUserPassOverride,
+				siltaConfig, helmFlags,
+				deploymentTimeout,
+				releaseName, namespace)
+			pipedExec(command, debug)
+
+			// command = fmt.Sprintf(`
+			// 	NAMESPACE="%s"
+			// 	RELEASE_NAME="%s"
+			// 	kubectl get deployment
+			// 		--namespace "${NAMESPACE}"
+			// 		--label "release=${RELEASE_NAME}"
+			// 		--output name | xargs -n 1 kubectl rollout status -n "${NAMESPACE}"`,
+			// 	namespace, releaseName)
+			// pipedExec(command, debug)
 		}
 
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
@@ -258,40 +361,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 				}
 			}
 
-			// Override Database credentials if specified
-			dbRootPassOverride := ""
-			if len(dbRootPass) > 0 {
-				dbRootPassOverride = fmt.Sprintf("--set mariadb.rootUser.password='%s'", dbRootPass)
-			}
-			dbUserPassOverride := ""
-			if len(dbUserPass) > 0 {
-				dbUserPassOverride = fmt.Sprintf("--set mariadb.db.password='%s'", dbUserPass)
-			}
-
-			// Skip basic auth for internal VPN if defined in environment
-			extraNoAuthIPs := ""
-			if len(vpnIP) > 0 {
-				extraNoAuthIPs = fmt.Sprintf("--set nginx.noauthips.vpn='%s/32'", vpnIP)
-			}
-
-			// Pass VPC-native setting if defined in environment
-			vpcNativeOverride := ""
-			if len(vpcNative) > 0 {
-				vpcNativeOverride = fmt.Sprintf("--set cluster.vpcNative='%s'", vpcNative)
-			}
-
-			// Add cluster type if defined in environment
-			extraClusterType := ""
-			if len(clusterType) > 0 {
-				extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
-			}
-
-			// Allow pinning a specific chart version
-			chartVersionOverride := ""
-			if len(chartVersion) > 0 {
-				chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
-			}
-
 			// TODO: rewrite the timeout handling and log printing after helm release
 			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
 				--repo '%s' \
@@ -365,8 +434,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 					echo "$statefulsets" | xargs -n 1 kubectl rollout status -n "$NAMESPACE"
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE"
-
-				
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname, phpImageUrl, nginxImageUrl,
