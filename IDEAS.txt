@@ -1,0 +1,8 @@
+# Gox - Simple Go Cross Compilation
+https://github.com/mitchellh/gox
+
+# Binary signing for OS/X
+https://www.kencochrane.com/2020/08/01/build-and-sign-golang-binaries-for-macos-with-github-actions/
+
+# Self updating
+https://github.com/rhysd/go-github-selfupdate

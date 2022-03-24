@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"encoding/base64"
@@ -31,19 +32,29 @@ var secretsDecryptCmd = &cobra.Command{
 			}
 		}
 
+		// Replace comma with whitespace and iterate all whitespace separated values.
+		// This also means there can't be commas nor whitespaces in filenames.
+		space := regexp.MustCompile(`,\s?|\s+`)
+		files = space.ReplaceAllString(files, " ")
+
 		// Allow failing with exit code 0 when no files defined.
 		if len(files) == 0 {
 			fmt.Println("No input files supplied")
 			return
 		}
 
-		// Split on comma.
-		fileList := strings.Split(files, ",")
+		// Split on whitespace.
+		fileList := strings.Split(files, " ")
 
 		// Decrypt files
 		for i := range fileList {
 			file := fileList[i]
 			fmt.Printf("Decrypting %s\n", file)
+
+			if debug == true {
+				fmt.Print("..skipping\n")
+				continue
+			}
 
 			// Read encrypted file
 			encryptedMsg, err := os.ReadFile(file)

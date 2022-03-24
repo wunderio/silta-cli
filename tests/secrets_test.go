@@ -80,6 +80,20 @@ func TestSecretsEncryptDecryptCmd(t *testing.T) {
 		t.Error("Decrypted file incorrect")
 	}
 
+	// Test multiple file separator
+	command = "secrets decrypt --file 'tests/test-secret1,tests/test-secret2, tests/test-secret3 tests/test-secret4' --secret-key test --debug"
+	environment = []string{}
+	testString = `Decrypting tests/test-secret1
+..skipping
+Decrypting tests/test-secret2
+..skipping
+Decrypting tests/test-secret3
+..skipping
+Decrypting tests/test-secret4
+..skipping
+`
+	CliExecTest(t, command, environment, testString, true)
+
 	// Change dir back to previous
 	os.Chdir(wd)
 }
