@@ -158,55 +158,93 @@ var ciReleaseDeployCmd = &cobra.Command{
 				log.Fatal("Nginx image url required (nginx-image-url)")
 			}
 
+			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
+
 			// helm release
-			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
-				--repo '%s' \
-				%s \
+			command = fmt.Sprintf(`
+			RELEASE_NAME='%s'
+			CHART_NAME='%s'
+			CHART_REPOSITORY='%s'
+			EXTRA_CHART_VERSION='%s'
+			SILTA_ENVIRONMENT_NAME='%s'
+			BRANCHNAME='%s'
+			NGINX_IMAGE_URL='%s'
+			CLUSTER_DOMAIN='%s'	
+			EXTRA_NOAUTHIPS='%s'
+			EXTRA_VPCNATIVE='%s'
+			EXTRA_CLUSTERTYPE='%s'
+			NAMESPACE='%s'
+			SILTA_CONFIG='%s'
+			EXTRA_HELM_FLAGS='%s'
+			
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='%s' \
-				--set silta-release.branchName='%s' \
-				--set nginx.image='%s' \
-				--set clusterDomain='%s' \
-				%s \
-				%s \
-				%s \
-				--namespace='%s' \
-				--values '%s' \
-				%s \
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
 				--wait`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname, nginxImageUrl,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				namespace, siltaConfig, helmFlags)
 			pipedExec(command, debug)
-		}
 
-		if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
+		} else if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
+
+			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			// helm release
-			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
-				--repo '%s' \
-				%s \
+			command = fmt.Sprintf(`
+			RELEASE_NAME='%s'
+			CHART_NAME='%s'
+			CHART_REPOSITORY='%s'
+			EXTRA_CHART_VERSION='%s'
+			SILTA_ENVIRONMENT_NAME='%s'
+			BRANCHNAME='%s'
+			GIT_REPOSITORY_URL='%s'
+			GITAUTH_USERNAME='%s'
+			GITAUTH_PASSWORD='%s'
+			CLUSTER_DOMAIN='%s'	
+			NAMESPACE='%s'
+			EXTRA_NOAUTHIPS='%s'
+			EXTRA_VPCNATIVE='%s'
+			EXTRA_CLUSTERTYPE='%s'
+			EXTRA_DB_ROOT_PASS='%s'
+			EXTRA_DB_USER_PASS='%s'
+			SILTA_CONFIG='%s'
+			EXTRA_HELM_FLAGS='%s'
+			DEPLOYMENT_TIMEOUT='%s'
+
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='%s' \
-				--set silta-release.branchName='%s' \
-				--set shell.gitAuth.repositoryUrl='%s' \
-				--set shell.gitAuth.keyserver.username='%s' \
-				--set shell.gitAuth.keyserver.password='%s' \
-				--set clusterDomain='%s' \
-				--namespace='%s' \
-				%s \
-				%s \
-				%s \
-				%s \
-				%s \
-				--values '%s' \
-				%s \
-				--timeout '%s' &> helm-output.log & pid=$!
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set shell.gitAuth.repositoryUrl="${GIT_REPOSITORY_URL}" \
+				--set shell.gitAuth.keyserver.username="${GITAUTH_USERNAME}" \
+				--set shell.gitAuth.keyserver.password="${GITAUTH_PASSWORD}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				--namespace="${NAMESPACE}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				${EXTRA_DB_ROOT_PASS} \
+				${EXTRA_DB_USER_PASS} \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!
 
 				# TODO: Rewrite this part
-				RELEASE_NAME=%s
-				NAMESPACE=%s
 
 				echo -n "Waiting for containers to start"
 
@@ -260,22 +298,10 @@ var ciReleaseDeployCmd = &cobra.Command{
 				extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride,
 				siltaConfig, helmFlags,
-				deploymentTimeout,
-				releaseName, namespace)
+				deploymentTimeout)
 			pipedExec(command, debug)
 
-			// command = fmt.Sprintf(`
-			// 	NAMESPACE="%s"
-			// 	RELEASE_NAME="%s"
-			// 	kubectl get deployment
-			// 		--namespace "${NAMESPACE}"
-			// 		--label "release=${RELEASE_NAME}"
-			// 		--output name | xargs -n 1 kubectl rollout status -n "${NAMESPACE}"`,
-			// 	namespace, releaseName)
-			// pipedExec(command, debug)
-		}
-
-		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
+		} else if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
 			if len(phpImageUrl) == 0 {
 				log.Fatal("PHP image url required (php-image-url)")
@@ -296,7 +322,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					if helm status -n "$NAMESPACE" "$RELEASE_NAME" > /dev/null  2>&1
 					then
 						CURRENT_CHART_VERSION=$(helm history -n "$NAMESPACE" "$RELEASE_NAME" --max 1 --output json | jq -r '.[].chart')
-						echo "There is an existing chart with version $current_chart_version"
+						echo "There is an existing chart with version $CURRENT_CHART_VERSION"
 					fi
 
 					# Special updates
@@ -361,35 +387,60 @@ var ciReleaseDeployCmd = &cobra.Command{
 				}
 			}
 
+			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
+
 			// TODO: rewrite the timeout handling and log printing after helm release
-			command = fmt.Sprintf(`helm upgrade --install '%s' '%s' \
-				--repo '%s' \
-				%s \
+			command = fmt.Sprintf(`
+			RELEASE_NAME='%s'
+			CHART_NAME='%s'
+			CHART_REPOSITORY='%s'
+			EXTRA_CHART_VERSION='%s'
+			SILTA_ENVIRONMENT_NAME='%s'
+			BRANCHNAME='%s'
+			PHP_IMAGE_URL='%s'
+			NGINX_IMAGE_URL='%s'
+			SHELL_IMAGE_URL='%s'
+			GIT_REPOSITORY_URL='%s'
+			GITAUTH_USERNAME='%s'
+			GITAUTH_PASSWORD='%s'
+			CLUSTER_DOMAIN='%s'	
+			EXTRA_NOAUTHIPS='%s'
+			EXTRA_VPCNATIVE='%s'
+			EXTRA_CLUSTERTYPE='%s'
+			EXTRA_DB_ROOT_PASS='%s'
+			EXTRA_DB_USER_PASS='%s'
+			EXTRA_REFERENCE_DATA='%s'
+			NAMESPACE='%s'
+			SILTA_CONFIG='%s'
+			EXTRA_HELM_FLAGS='%s'
+			DEPLOYMENT_TIMEOUT='%s'
+
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='%s' \
-				--set silta-release.branchName='%s' \
-				--set php.image='%s' \
-				--set nginx.image='%s' \
-				--set shell.image='%s' \
-				--set shell.gitAuth.repositoryUrl='%s' \
-				--set shell.gitAuth.keyserver.username='%s' \
-				--set shell.gitAuth.keyserver.password='%s' \
-				--set clusterDomain='%s' \
-				%s \
-				%s \
-				%s \
-				%s \
-				%s \
-				%s \
-				--namespace='%s' \
-				--values '%s' \
-				%s \
-				--timeout '%s' &> helm-output.log & pid=$!
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set php.image="${PHP_IMAGE_URL}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set shell.image="${SHELL_IMAGE_URL}" \
+				--set shell.gitAuth.repositoryUrl="${GIT_REPOSITORY_URL}" \
+				--set shell.gitAuth.keyserver.username="${GITAUTH_USERNAME}" \
+				--set shell.gitAuth.keyserver.password="${GITAUTH_PASSWORD}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				${EXTRA_DB_ROOT_PASS} \
+				${EXTRA_DB_USER_PASS} \
+				${EXTRA_REFERENCE_DATA} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!
 
 				# TODO: Rewrite this part
-				RELEASE_NAME=%s
-				NAMESPACE=%s
-
+				
 				echo -n "Waiting for containers to start"
 
 				TIME_WAITING=0
@@ -436,14 +487,16 @@ var ciReleaseDeployCmd = &cobra.Command{
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE"
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname, phpImageUrl, nginxImageUrl,
-				shellImageUrl, repositoryUrl, gitAuthUsername, gitAuthPassword,
+				siltaEnvironmentName, branchname,
+				phpImageUrl, nginxImageUrl, shellImageUrl,
+				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride, referenceDataOverride, namespace,
-				siltaConfig, helmFlags, deploymentTimeout,
-				releaseName, namespace)
+				siltaConfig, helmFlags, deploymentTimeout)
 			pipedExec(command, debug)
 
+		} else {
+			fmt.Printf("Chart name %s does not match preselected names (drupal, frontend, simple), helm release step was skipped\n", chartName)
 		}
 	},
 }

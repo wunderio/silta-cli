@@ -131,29 +131,54 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--debug`
 
 	environment = []string{}
-	testString = `helm upgrade --install 'test' 'drupal' \
-				--repo 'https://storage.googleapis.com/charts.wdr.io' \
-				 \
+	testString = `
+			RELEASE_NAME='test'
+			CHART_NAME='drupal'
+			CHART_REPOSITORY='https://storage.googleapis.com/charts.wdr.io'
+			EXTRA_CHART_VERSION=''
+			SILTA_ENVIRONMENT_NAME=''
+			BRANCHNAME=''
+			PHP_IMAGE_URL='php-image'
+			NGINX_IMAGE_URL='nginx-image'
+			SHELL_IMAGE_URL='shell-image'
+			GIT_REPOSITORY_URL=''
+			GITAUTH_USERNAME=''
+			GITAUTH_PASSWORD=''
+			CLUSTER_DOMAIN=''	
+			EXTRA_NOAUTHIPS=''
+			EXTRA_VPCNATIVE=''
+			EXTRA_CLUSTERTYPE=''
+			EXTRA_DB_ROOT_PASS=''
+			EXTRA_DB_USER_PASS=''
+			EXTRA_REFERENCE_DATA=''
+			NAMESPACE='default'
+			SILTA_CONFIG=''
+			EXTRA_HELM_FLAGS=''
+			DEPLOYMENT_TIMEOUT='15m'
+
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='' \
-				--set silta-release.branchName='' \
-				--set php.image='php-image' \
-				--set nginx.image='nginx-image' \
-				--set shell.image='shell-image' \
-				--set shell.gitAuth.repositoryUrl='' \
-				--set shell.gitAuth.keyserver.username='' \
-				--set shell.gitAuth.keyserver.password='' \
-				--set clusterDomain='' \
-				 \
-				 \
-				 \
-				 \
-				 \
-				 \
-				--namespace='default' \
-				--values '' \
-				 \
-				--timeout '15m' &> helm-output.log & pid=$!`
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set php.image="${PHP_IMAGE_URL}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set shell.image="${SHELL_IMAGE_URL}" \
+				--set shell.gitAuth.repositoryUrl="${GIT_REPOSITORY_URL}" \
+				--set shell.gitAuth.keyserver.username="${GITAUTH_USERNAME}" \
+				--set shell.gitAuth.keyserver.password="${GITAUTH_PASSWORD}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				${EXTRA_DB_ROOT_PASS} \
+				${EXTRA_DB_USER_PASS} \
+				${EXTRA_REFERENCE_DATA} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Test all args (drupal chart)
@@ -179,33 +204,58 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--db-user-pass 18 \
 		--namespace 19 \
 		--silta-config 20 \
-		--deployment-timeout 21 \
-		--helm-flags 22 \
+		--helm-flags 21 \
+		--deployment-timeout 22 \
 		--debug`
 	environment = []string{}
-	testString = `helm upgrade --install '1' 'drupal' \
-				--repo '3' \
-				--version '4' \
+	testString = `
+			RELEASE_NAME='1'
+			CHART_NAME='drupal'
+			CHART_REPOSITORY='3'
+			EXTRA_CHART_VERSION='--version '4''
+			SILTA_ENVIRONMENT_NAME='5'
+			BRANCHNAME='6'
+			PHP_IMAGE_URL='7'
+			NGINX_IMAGE_URL='8'
+			SHELL_IMAGE_URL='9'
+			GIT_REPOSITORY_URL='10'
+			GITAUTH_USERNAME='11'
+			GITAUTH_PASSWORD='12'
+			CLUSTER_DOMAIN='13'	
+			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
+			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
+			EXTRA_CLUSTERTYPE='--set cluster.type='16''
+			EXTRA_DB_ROOT_PASS='--set mariadb.rootUser.password='17''
+			EXTRA_DB_USER_PASS='--set mariadb.db.password='18''
+			EXTRA_REFERENCE_DATA=''
+			NAMESPACE='19'
+			SILTA_CONFIG='20'
+			EXTRA_HELM_FLAGS='21'
+			DEPLOYMENT_TIMEOUT='22'
+
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='5' \
-				--set silta-release.branchName='6' \
-				--set php.image='7' \
-				--set nginx.image='8' \
-				--set shell.image='9' \
-				--set shell.gitAuth.repositoryUrl='10' \
-				--set shell.gitAuth.keyserver.username='11' \
-				--set shell.gitAuth.keyserver.password='12' \
-				--set clusterDomain='13' \
-				--set nginx.noauthips.vpn='14/32' \
-				--set cluster.vpcNative='15' \
-				--set cluster.type='16' \
-				--set mariadb.rootUser.password='17' \
-				--set mariadb.db.password='18' \
-				 \
-				--namespace='19' \
-				--values '20' \
-				22 \
-				--timeout '21' &> helm-output.log & pid=$!`
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set php.image="${PHP_IMAGE_URL}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set shell.image="${SHELL_IMAGE_URL}" \
+				--set shell.gitAuth.repositoryUrl="${GIT_REPOSITORY_URL}" \
+				--set shell.gitAuth.keyserver.username="${GITAUTH_USERNAME}" \
+				--set shell.gitAuth.keyserver.password="${GITAUTH_PASSWORD}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				${EXTRA_DB_ROOT_PASS} \
+				${EXTRA_DB_USER_PASS} \
+				${EXTRA_REFERENCE_DATA} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Test all args (simple chart)
@@ -235,20 +285,36 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--helm-flags 22 \
 		--debug`
 	environment = []string{}
-	testString = `helm upgrade --install '1' 'simple' \
-				--repo '3' \
-				--version '4' \
+	testString = `
+			RELEASE_NAME='1'
+			CHART_NAME='simple'
+			CHART_REPOSITORY='3'
+			EXTRA_CHART_VERSION='--version '4''
+			SILTA_ENVIRONMENT_NAME='5'
+			BRANCHNAME='6'
+			NGINX_IMAGE_URL='8'
+			CLUSTER_DOMAIN='13'	
+			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
+			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
+			EXTRA_CLUSTERTYPE='--set cluster.type='16''
+			NAMESPACE='19'
+			SILTA_CONFIG='20'
+			EXTRA_HELM_FLAGS='22'
+			
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
 				--cleanup-on-fail \
-				--set environmentName='5' \
-				--set silta-release.branchName='6' \
-				--set nginx.image='8' \
-				--set clusterDomain='13' \
-				--set nginx.noauthips.vpn='14/32' \
-				--set cluster.vpcNative='15' \
-				--set cluster.type='16' \
-				--namespace='19' \
-				--values '20' \
-				22 \
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
 				--wait`
 	CliExecTest(t, command, environment, testString, false)
 
