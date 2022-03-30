@@ -13,6 +13,10 @@ Available flags and environment variables:
   * General (required):
     - "--image-repo-host" flag or "IMAGE_REPO_HOST" environment variable: (Docker) container image repository url
 
+  * General (optional):
+    - "--image-repo-user" flag or "IMAGE_REPO_USER" environment variable: (Docker) container image repository user
+    - "--image-repo-pass" flag or "IMAGE_REPO_PASS" environment variable: (Docker) container image repository password
+
   * Google Cloud:
     - "--gcp-key-json" flag or "GCP_KEY_JSON" environment variable: Google Cloud service account key (string value)
 
@@ -33,6 +37,9 @@ silta ci image login [flags]
 
 ```
       --image-repo-host string         (Docker) container image repository url
+      --image-repo-tls                 (Docker) container image repository url tls (enabled by default) (default true)
+      --image-repo-user string         (Docker) container image repository username
+      --image-repo-pass string         (Docker) container image repository password
       --gcp-key-json string            Google Cloud service account key (plaintext, json)
       --aws-secret-access-key string   Amazon Web Services IAM account key (string value)
       --aks-tenant-id string           Azure Services tenant id

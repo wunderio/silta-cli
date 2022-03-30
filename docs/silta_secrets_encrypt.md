@@ -1,17 +1,17 @@
-## silta secrets decrypt
+## silta secrets encrypt
 
-Decrypt encrypted files
+Encrypt secret files
 
 ```
-silta secrets decrypt [flags]
+silta secrets encrypt [flags]
 ```
 
 ### Options
 
 ```
-      --file string             Encrypted file location. Can have multiple, comma separated paths (i.e. 'silta/secrets.enc,silta/secrets2.enc')
-  -h, --help                    help for decrypt
-      --output-file string      Output file location (optional, rewrites original when undefined, don't use with multiple input files)
+      --file string             File location
+  -h, --help                    help for encrypt
+      --output-file string      Output file location (optional, rewrites original when undefined)
       --secret-key string       Secret key (falls back to SECRET_KEY environment variable. Also see: --secret-key-env)
       --secret-key-env string   Environment variable holding symmetrical decryption key.
 ```

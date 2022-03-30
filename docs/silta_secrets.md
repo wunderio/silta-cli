@@ -23,4 +23,5 @@ silta secrets [flags]
 
 * [silta](silta.md)	 - Silta CLI
 * [silta secrets decrypt](silta_secrets_decrypt.md)	 - Decrypt encrypted files
+* [silta secrets encrypt](silta_secrets_encrypt.md)	 - Encrypt secret files
 
