@@ -22,6 +22,7 @@ silta ci release [flags]
 ### SEE ALSO
 
 * [silta ci](silta_ci.md)	 - Silta CI Commands
+* [silta ci release clean-failed](silta_ci_release_clean-failed.md)	 - Clean failed releases
 * [silta ci release deploy](silta_ci_release_deploy.md)	 - Deploy release
 * [silta ci release environmentname](silta_ci_release_environmentname.md)	 - Return environment name
 * [silta ci release info](silta_ci_release_info.md)	 - Print release information

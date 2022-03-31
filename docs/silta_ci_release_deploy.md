@@ -20,6 +20,7 @@ silta ci release deploy [flags]
       --deployment-timeout string       Helm deployment timeout
       --gitauth-password string         Gitauth server password
       --gitauth-username string         Gitauth server username
+      --helm-flags string               Extra flags for helm release
   -h, --help                            help for deploy
       --namespace string                Project name (namespace, i.e. "drupal-project")
       --nginx-image-url string          PHP image url
