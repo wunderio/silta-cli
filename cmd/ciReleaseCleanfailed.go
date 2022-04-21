@@ -17,7 +17,7 @@ var ciReleaseCleanfailedCmd = &cobra.Command{
 				NAMESPACE='%s'
 				RELEASE_NAME='%s'
 				
-				failed_revision=$(helm list -n "${NAMESPACE}" --failed --pending --filter="(\s|^)({$RELEASE_NAME})(\s|$)" | tail -1 | cut -f3)
+				failed_revision=$(helm list -n "${NAMESPACE}" --failed --pending --filter="(\s|^)(${RELEASE_NAME})(\s|$)" | tail -1 | cut -f3)
 
 				if [[ "${failed_revision}" -eq 1 ]]; then
 					# Remove any existing post-release hook, since it's technically not part of the release.
