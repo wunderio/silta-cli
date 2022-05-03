@@ -57,15 +57,24 @@ func pipedExec(command string, debug bool) {
 		cmd := exec.Command("bash", "-c", command)
 
 		// create a pipe for the output of the script
-		cmdReader, err := cmd.StdoutPipe()
+		cmdErrReader, err := cmd.StdoutPipe()
 		if err != nil {
-			log.Fatal("Error (pipe): ", err)
+			log.Fatal("Error (stdout pipe): ", err)
 			return
 		}
-		scanner := bufio.NewScanner(cmdReader)
+		cmdOutReader, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatal("Error (stderr pipe): ", err)
+			return
+		}
+		errScanner := bufio.NewScanner(cmdOutReader)
+		outScanner := bufio.NewScanner(cmdErrReader)
 		go func() {
-			for scanner.Scan() {
-				fmt.Printf("  %s\n", scanner.Text())
+			for errScanner.Scan() {
+				fmt.Printf("ERROR: %s\n", errScanner.Text())
+			}
+			for outScanner.Scan() {
+				fmt.Printf("%s\n", outScanner.Text())
 			}
 		}()
 		err = cmd.Start()

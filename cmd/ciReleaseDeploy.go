@@ -322,7 +322,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					if helm status -n "$NAMESPACE" "$RELEASE_NAME" > /dev/null  2>&1
 					then
 						CURRENT_CHART_VERSION=$(helm history -n "$NAMESPACE" "$RELEASE_NAME" --max 1 --output json | jq -r '.[].chart')
-						echo "There is an existing chart with version $CURRENT_CHART_VERSION"
+						echo "There is an existing chart deployed with version $CURRENT_CHART_VERSION"
 					fi
 
 					# Special updates
