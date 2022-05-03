@@ -162,6 +162,8 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 			// helm release
 			command = fmt.Sprintf(`
+			set -euo pipefail
+
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'
@@ -204,6 +206,8 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 			// helm release
 			command = fmt.Sprintf(`
+			set -euo pipefail
+			
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'
@@ -391,6 +395,8 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 			// TODO: rewrite the timeout handling and log printing after helm release
 			command = fmt.Sprintf(`
+			set -euo pipefail
+			
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'
