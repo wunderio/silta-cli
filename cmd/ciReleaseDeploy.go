@@ -228,6 +228,19 @@ var ciReleaseDeployCmd = &cobra.Command{
 			EXTRA_HELM_FLAGS='%s'
 			DEPLOYMENT_TIMEOUT='%s'
 
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					echo "$failed_pods"
+					echo ""
+					echo "Please check logs for the pods above"
+					true
+				fi
+				false
+			}
+
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \
@@ -420,6 +433,19 @@ var ciReleaseDeployCmd = &cobra.Command{
 			SILTA_CONFIG='%s'
 			EXTRA_HELM_FLAGS='%s'
 			DEPLOYMENT_TIMEOUT='%s'
+
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					echo "$failed_pods"
+					echo ""
+					echo "Please check logs for the pods above"
+					true
+				fi
+				false
+			}
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
