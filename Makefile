@@ -1,6 +1,6 @@
 VERSION=$(shell cat VERSION 2> /dev/null || echo "custom-`date +%Y-%m-%d-%H-%M`" )
 
-all: build test
+all: build test doc install
 
 build:
 	go mod download
@@ -15,6 +15,9 @@ test:
 
 install:
 	cp ./silta ~/.local/bin/silta
+
+doc:
+	silta doc
 
 clean:
 	go clean -r -x

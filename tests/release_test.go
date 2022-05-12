@@ -344,6 +344,66 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--wait`
 	CliExecTest(t, command, environment, testString, false)
 
+	// Test all args (simple chart)
+	command = `ci release deploy \
+		--release-name 1 \
+		--release-suffix 2 \
+		--chart-name simple \
+		--chart-repository 3 \
+		--chart-version 4 \
+		--silta-environment-name 5 \
+		--branchname 6 \
+		--php-image-url 7 \
+		--nginx-image-url 8 \
+		--shell-image-url 9 \
+		--repository-url 10 \
+		--gitauth-username 11 \
+		--gitauth-password 12 \
+		--cluster-domain 13 \
+		--vpn-ip 14 \
+		--vpc-native 15 \
+		--cluster-type 16 \
+		--db-root-pass 17 \
+		--db-user-pass 18 \
+		--namespace 19 \
+		--silta-config 20 \
+		--deployment-timeout 21 \
+		--helm-flags 22 \
+		--debug`
+	environment = []string{}
+	testString = `
+			RELEASE_NAME='1'
+			CHART_NAME='simple'
+			CHART_REPOSITORY='3'
+			EXTRA_CHART_VERSION='--version '4''
+			SILTA_ENVIRONMENT_NAME='5'
+			BRANCHNAME='6'
+			NGINX_IMAGE_URL='8'
+			CLUSTER_DOMAIN='13'	
+			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
+			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
+			EXTRA_CLUSTERTYPE='--set cluster.type='16''
+			NAMESPACE='19'
+			SILTA_CONFIG='20'
+			EXTRA_HELM_FLAGS='22'
+			
+			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
+				--repo "${CHART_REPOSITORY}" \
+				${EXTRA_CHART_VERSION} \
+				--cleanup-on-fail \
+				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
+				--set silta-release.branchName="${BRANCHNAME}" \
+				--set nginx.image="${NGINX_IMAGE_URL}" \
+				--set clusterDomain="${CLUSTER_DOMAIN}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
+				--namespace="${NAMESPACE}" \
+				--values "${SILTA_CONFIG}" \
+				${EXTRA_HELM_FLAGS} \
+				--wait`
+	CliExecTest(t, command, environment, testString, false)
+
 	// Change dir back to previous
 	os.Chdir(wd)
 }

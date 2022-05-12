@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,10 @@ Available flags and environment variables:
   * General (required):
     - "--image-repo-host" flag or "IMAGE_REPO_HOST" environment variable: (Docker) container image repository url
 
+  * General (optional):
+    - "--image-repo-user" flag or "IMAGE_REPO_USER" environment variable: (Docker) container image repository user
+    - "--image-repo-pass" flag or "IMAGE_REPO_PASS" environment variable: (Docker) container image repository password
+
   * Google Cloud:
     - "--gcp-key-json" flag or "GCP_KEY_JSON" environment variable: Google Cloud service account key (string value)
 
@@ -37,6 +42,9 @@ Available flags and environment variables:
 
 		// Read flags into variables
 		imageRepoHost, _ := cmd.Flags().GetString("image-repo-host")
+		imageRepoTLS, _ := cmd.Flags().GetBool("image-repo-tls")
+		imageRepoUser, _ := cmd.Flags().GetString("image-repo-user")
+		imageRepoPass, _ := cmd.Flags().GetString("image-repo-pass")
 		gcpKeyJson, _ := cmd.Flags().GetString("gcp-key-json")
 		awsSecretAccessKey, _ := cmd.Flags().GetString("aws-secret-access-key")
 		aksTenantID, _ := cmd.Flags().GetString("aks-tenant-id")
@@ -44,7 +52,7 @@ Available flags and environment variables:
 		aksSPPass, _ := cmd.Flags().GetString("aks-sp-password")
 
 		// Use environment variables as fallback
-		if useEnv == true {
+		if useEnv {
 			if len(gcpKeyJson) == 0 {
 				gcpKeyJson = os.Getenv("GCLOUD_KEY_JSON")
 			}
@@ -56,6 +64,12 @@ Available flags and environment variables:
 			}
 			if len(imageRepoHost) == 0 {
 				imageRepoHost = os.Getenv("IMAGE_REPO_HOST")
+			}
+			if len(imageRepoUser) == 0 {
+				imageRepoUser = os.Getenv("IMAGE_REPO_USER")
+			}
+			if len(imageRepoPass) == 0 {
+				imageRepoPass = os.Getenv("IMAGE_REPO_PASS")
 			}
 			if len(imageRepoHost) == 0 {
 				imageRepoHost = os.Getenv("DOCKER_REPO_HOST")
@@ -74,6 +88,9 @@ Available flags and environment variables:
 		if debug == true {
 			// Print variables
 			fmt.Println("IMAGE_REPO_HOST:", imageRepoHost)
+			fmt.Println("IMAGE_REPO_TLS:", imageRepoTLS)
+			fmt.Println("IMAGE_REPO_USER:", imageRepoUser)
+			fmt.Println("IMAGE_REPO_PASS:", imageRepoPass)
 			fmt.Println("GCLOUD_KEY_JSON:", gcpKeyJson)
 			fmt.Println("AWS_SECRET_ACCESS_KEY:", awsSecretAccessKey)
 			fmt.Println("AKS_TENANT_ID:", aksTenantID)
@@ -81,15 +98,27 @@ Available flags and environment variables:
 			fmt.Println("AKS_SP_PASSWORD:", aksSPPass)
 		}
 
-		if len(gcpKeyJson) == 0 && len(awsSecretAccessKey) == 0 && len(aksSPPass) == 0 {
+		if len(imageRepoUser) == 0 && len(imageRepoPass) == 0 && len(gcpKeyJson) == 0 && len(awsSecretAccessKey) == 0 && len(aksSPPass) == 0 {
 			log.Fatal("Docker registry credentials are empty, have you set a context for this CircleCI job correctly?")
 		} else {
 
 			command := ""
 
-			if gcpKeyJson != "" {
+			if imageRepoUser != "" {
+				// Allow insecure registries (local dev)
+				protocol := "https://"
+				if !imageRepoTLS {
+					protocol = "http://"
+				}
+				// User && pass login
+				command = fmt.Sprintf("echo %q | docker login --username %q --password-stdin %s%s", imageRepoPass, imageRepoUser, protocol, imageRepoHost)
+
+			} else if gcpKeyJson != "" {
 				// GCR login
-				command = fmt.Sprintf("echo %q | docker login --username _json_key --password-stdin https://%s", gcpKeyJson, imageRepoHost)
+				if !strings.Contains(imageRepoHost, "://") {
+					imageRepoHost = "https://" + imageRepoHost
+				}
+				command = fmt.Sprintf("echo %q | docker login --username %q --password-stdin %s", gcpKeyJson, "_json_key", imageRepoHost)
 
 			} else if awsSecretAccessKey != "" {
 				// ECR login
@@ -120,6 +149,9 @@ func init() {
 	ciImageCmd.AddCommand(ciImageLoginCmd)
 
 	ciImageLoginCmd.Flags().String("image-repo-host", "", "(Docker) container image repository url")
+	ciImageLoginCmd.Flags().Bool("image-repo-tls", true, "(Docker) container image repository url tls (enabled by default)")
+	ciImageLoginCmd.Flags().String("image-repo-user", "", "(Docker) container image repository username")
+	ciImageLoginCmd.Flags().String("image-repo-pass", "", "(Docker) container image repository password")
 	ciImageLoginCmd.Flags().String("gcp-key-json", "", "Google Cloud service account key (plaintext, json)")
 	ciImageLoginCmd.Flags().String("aws-secret-access-key", "", "Amazon Web Services IAM account key (string value)")
 	ciImageLoginCmd.Flags().String("aks-tenant-id", "", "Azure Services tenant id")
