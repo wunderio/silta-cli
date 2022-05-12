@@ -84,6 +84,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 				namespace, siltaConfig)
 
 			cmd := exec.Command("bash", "-c", command)
+			// StdOutPipe omitted to avoid exposing secrets
 			cmdErrReader, err := cmd.StderrPipe()
 			if err != nil {
 				log.Fatal("Error (stderr pipe): ", err)
