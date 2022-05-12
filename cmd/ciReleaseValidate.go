@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -64,7 +67,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 			NAMESPACE='%s'
 			SILTA_CONFIG='%s'
 	
-			helm upgrade --dry-run --debug --install "${RELEASE_NAME}" "${CHART_NAME}" \
+			helm upgrade --dry-run --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \
 				--set environmentName="${SILTA_ENVIRONMENT_NAME}" \
@@ -79,7 +82,27 @@ var ciReleaseValidateCmd = &cobra.Command{
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,
 				namespace, siltaConfig)
-			pipedExec(command, debug)
+
+			cmd := exec.Command("bash", "-c", command)
+			cmdErrReader, err := cmd.StderrPipe()
+			if err != nil {
+				log.Fatal("Error (stderr pipe): ", err)
+				return
+			}
+			errScanner := bufio.NewScanner(cmdErrReader)
+			go func() {
+				for errScanner.Scan() {
+					fmt.Printf("ERROR: %s\n", errScanner.Text())
+				}
+			}()
+			err = cmd.Start()
+			if err != nil {
+				log.Fatal("Error (Start): ", err)
+			}
+			err = cmd.Wait()
+			if err != nil {
+				log.Fatal("Error (Wait): ", err)
+			}
 
 		} else {
 			fmt.Printf("Chart name %s does not match \"drupal\", helm validation step was skipped\n", chartName)
