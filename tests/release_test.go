@@ -156,6 +156,19 @@ func TestReleaseDeployCmd(t *testing.T) {
 			EXTRA_HELM_FLAGS=''
 			DEPLOYMENT_TIMEOUT='15m'
 
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					echo "$failed_pods"
+					echo ""
+					echo "Please check logs for the pods above"
+					true
+				fi
+				false
+			}
+
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \
@@ -232,6 +245,19 @@ func TestReleaseDeployCmd(t *testing.T) {
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='21'
 			DEPLOYMENT_TIMEOUT='22'
+
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					echo "$failed_pods"
+					echo ""
+					echo "Please check logs for the pods above"
+					true
+				fi
+				false
+			}
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
