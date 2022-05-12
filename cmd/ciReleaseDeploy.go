@@ -263,7 +263,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# TODO: Rewrite this part
 
-				echo -n "Waiting for containers to start"
+				echo "Waiting for containers to start"
 
 				TIME_WAITING=0
 				LOGS_SHOWN=false
@@ -295,9 +295,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 					exit 1
 					fi
 
-					echo -n "."
-					sleep 5
-					TIME_WAITING=$((TIME_WAITING+5))
+					echo "."
+					sleep 10
+					TIME_WAITING=$((TIME_WAITING+10))
 				done
 
 				# Wait for resources to be ready
@@ -374,11 +374,11 @@ var ciReleaseDeployCmd = &cobra.Command{
 						kubectl delete pvc -n "$NAMESPACE" -l release="$RELEASE_NAME"
 						kubectl delete pvc -n "$NAMESPACE" -l app="$RELEASE_NAME-es"
 
-						echo -n "Waiting for volumes to be deleted."
+						echo "Waiting for volumes to be deleted."
 						until [[ -z $(kubectl get pv | grep "$NAMESPACE/$RELEASE_NAME-") ]]
 						do
-						echo -n "."
-						sleep 5
+						echo "."
+						sleep 10
 						done
 					fi
 
@@ -473,7 +473,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# TODO: Rewrite this part
 				
-				echo -n "Waiting for containers to start"
+				echo "Waiting for containers to start"
 
 				TIME_WAITING=0
 				LOGS_SHOWN=false
@@ -505,9 +505,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 					exit 1
 					fi
 
-					echo -n "."
-					sleep 5
-					TIME_WAITING=$((TIME_WAITING+5))
+					echo "."
+					sleep 10
+					TIME_WAITING=$((TIME_WAITING+10))
 				done
 
 				# Wait for resources to be ready
