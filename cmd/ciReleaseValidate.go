@@ -27,6 +27,9 @@ var ciReleaseValidateCmd = &cobra.Command{
 		chartName, _ := cmd.Flags().GetString("chart-name")
 		chartRepository, _ := cmd.Flags().GetString("chart-repository")
 		siltaConfig, _ := cmd.Flags().GetString("silta-config")
+		vpnIP, _ := cmd.Flags().GetString("vpn-ip")
+		vpcNative, _ := cmd.Flags().GetString("vpc-native")
+		clusterType, _ := cmd.Flags().GetString("cluster-type")
 
 		// Use environment variables as fallback
 		if useEnv == true {
@@ -35,6 +38,15 @@ var ciReleaseValidateCmd = &cobra.Command{
 			}
 			if len(siltaEnvironmentName) == 0 {
 				siltaEnvironmentName = common.SiltaEnvironmentName(branchname, releaseSuffix)
+			}
+			if len(vpnIP) == 0 {
+				vpnIP = os.Getenv("VPN_IP")
+			}
+			if len(vpcNative) == 0 {
+				vpcNative = os.Getenv("VPC_NATIVE")
+			}
+			if len(clusterType) == 0 {
+				clusterType = os.Getenv("CLUSTER_TYPE")
 			}
 		}
 
@@ -48,6 +60,23 @@ var ciReleaseValidateCmd = &cobra.Command{
 		chartVersionOverride := ""
 		if len(chartVersion) > 0 {
 			chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
+		}
+		// Skip basic auth for internal VPN if defined in environment
+		extraNoAuthIPs := ""
+		if len(vpnIP) > 0 {
+			extraNoAuthIPs = fmt.Sprintf("--set nginx.noauthips.vpn='%s/32'", vpnIP)
+		}
+
+		// Pass VPC-native setting if defined in environment
+		vpcNativeOverride := ""
+		if len(vpcNative) > 0 {
+			vpcNativeOverride = fmt.Sprintf("--set cluster.vpcNative='%s'", vpcNative)
+		}
+
+		// Add cluster type if defined in environment
+		extraClusterType := ""
+		if len(clusterType) > 0 {
+			extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
 		}
 
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
@@ -66,6 +95,9 @@ var ciReleaseValidateCmd = &cobra.Command{
 			BRANCHNAME='%s'
 			NAMESPACE='%s'
 			SILTA_CONFIG='%s'
+			EXTRA_NOAUTHIPS='%s'
+			EXTRA_VPCNATIVE='%s'
+			EXTRA_CLUSTERTYPE='%s'
 	
 			helm upgrade --dry-run --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -76,12 +108,15 @@ var ciReleaseValidateCmd = &cobra.Command{
 				--set nginx.image="test:test" \
 				--set shell.image="test:test" \
 				--namespace="${NAMESPACE}" \
+				${EXTRA_NOAUTHIPS} \
+				${EXTRA_VPCNATIVE} \
+				${EXTRA_CLUSTERTYPE} \
 				--values "${SILTA_CONFIG}"
 				
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,
-				namespace, siltaConfig)
+				namespace, siltaConfig, extraNoAuthIPs, vpcNativeOverride, extraClusterType)
 
 			cmd := exec.Command("bash", "-c", command)
 			// StdOutPipe omitted to avoid exposing secrets
@@ -118,6 +153,9 @@ func init() {
 	ciReleaseValidateCmd.Flags().String("namespace", "", "Project name (namespace, i.e. \"drupal-project\")")
 	ciReleaseValidateCmd.Flags().String("silta-environment-name", "", "Environment name override based on branchname and release-suffix. Used in some helm charts.")
 	ciReleaseValidateCmd.Flags().String("branchname", "", "Repository branchname that will be used for release name and environment name creation")
+	ciReleaseValidateCmd.Flags().String("vpn-ip", "", "VPN IP for basic auth allow list")
+	ciReleaseValidateCmd.Flags().String("vpc-native", "", "VPC-native cluster (GKE specific)")
+	ciReleaseValidateCmd.Flags().String("cluster-type", "", "Cluster type (i.e. gke, aws, aks, other)")
 	ciReleaseValidateCmd.Flags().String("chart-version", "", "Deploy a specific chart version")
 	ciReleaseValidateCmd.Flags().String("chart-name", "", "Chart name")
 	ciReleaseValidateCmd.Flags().String("chart-repository", "", "Chart repository")
