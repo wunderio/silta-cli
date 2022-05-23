@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -65,6 +66,12 @@ var cloudLoginCmd = &cobra.Command{
 		aksTenantID, _ := cmd.Flags().GetString("aks-tenant-id")
 		aksSPAppID, _ := cmd.Flags().GetString("aks-sp-app-id")
 		aksSPPass, _ := cmd.Flags().GetString("aks-sp-password")
+
+		// Expand tilde home directory
+		if strings.HasPrefix(kubeConfigPath, "~/") {
+			dirname, _ := os.UserHomeDir()
+			kubeConfigPath = filepath.Join(dirname, kubeConfigPath[2:])
+		}
 
 		// Environment value fallback
 		if useEnv == true {
