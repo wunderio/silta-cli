@@ -1,10 +1,13 @@
 package common
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os/exec"
+	"strings"
 
+	"github.com/k0kubun/pp/v3"
 	"gopkg.in/yaml.v2"
 )
 
@@ -32,10 +35,10 @@ func ReadChartDefinition(chartFile string) chartDefinition {
 	}
 
 	var data chartDefinition
-	err2 := yaml.Unmarshal(ecfile, &data)
+	err = yaml.Unmarshal(ecfile, &data)
 
-	if err2 != nil {
-		log.Fatal(err2)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	return data
@@ -45,6 +48,15 @@ func AppendExtraCharts(charts *chartList, mainchart *chartDefinition) {
 
 	if len(charts.Charts) < 1 {
 		return
+	}
+
+	for _, dependency := range charts.Charts {
+		if strings.HasPrefix(dependency.Repository, "https://") {
+			command := "helm repo add " + dependency.Name + " " + dependency.Repository
+			helmCmd, _ := exec.Command("bash", "-c", command).CombinedOutput()
+
+			log.Print(string(helmCmd[:]))
+		}
 	}
 	mainchart.Dependencies = append(mainchart.Dependencies, charts.Charts...)
 }
@@ -76,5 +88,46 @@ func DownloadUntarChart(chartName *ChartNameVersion) {
 		log.SetFlags(0) //remove timestamp
 		log.Fatal(string(helmCmd[:]))
 	}
+
+}
+
+// func AppendToChartSchemaFile1(schemaFile string, chartName string) {
+// 	file, err := ioutil.ReadFile(schemaFile)
+// 	log.Println(schemaFile)
+// 	if err != nil {
+// 		log.Println(err)
+// 	}
+// 	var data ChartSchema
+// 	json.Unmarshal(file, &data)
+// 	log.Println(&data)
+// }
+
+func AppendToChartSchemaFile1(schemaFile string, chartName string) {
+	file, err := ioutil.ReadFile(schemaFile)
+	log.Println(schemaFile)
+	if err != nil {
+		log.Println(err)
+	}
+	var data interface{}
+	json.Unmarshal(file, &data)
+	arr := data.(map[string]interface{})
+
+	pp.Println(arr)
+
+	data_out, _ := json.Marshal(arr)
+	ioutil.WriteFile(schemaFile+"1", data_out, 0644)
+}
+
+func AppendToChartSchemaFile(schemaFile string, chartName string) {
+	file, err := ioutil.ReadFile(schemaFile)
+	log.Println(schemaFile)
+	if err != nil {
+		log.Println(err)
+	}
+
+	str := string(file)
+	str = strings.Replace(str, "\"projectName\"", "\"projectName\" : { \"type\": \"string\" }, \""+chartName+`"`, 1)
+
+	ioutil.WriteFile(schemaFile+"1", []byte(str), 0644)
 
 }

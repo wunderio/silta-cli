@@ -53,11 +53,13 @@ var editChartCmd = &cobra.Command{
 			var d = common.ReadChartDefinition(p[1] + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
 			common.WriteChartDefinition(d, p[1]+innerChartFile)
+			common.AppendToChartSchemaFile(chartName+"/values.schema.json", chartName)
 		} else {
 			var l = common.ReadCharts(deploymentFlag)
 			var d = common.ReadChartDefinition(chartName + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
 			common.WriteChartDefinition(d, chartName+innerChartFile)
+			common.AppendToChartSchemaFile(chartName+"/values.schema.json", chartName)
 		}
 
 	},
