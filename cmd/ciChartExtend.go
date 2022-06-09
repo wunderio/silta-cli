@@ -47,8 +47,7 @@ var editChartCmd = &cobra.Command{
 			c.Version = ""
 		}
 
-		p := strings.SplitN(chartUrl.Path, "/", 2)
-
+		p := strings.Split(chartUrl.Path, "/")
 		if debug == true {
 			log.Println("p[0] ", p[0])
 			log.Println("p[1] ", p[1])
@@ -83,6 +82,10 @@ var editChartCmd = &cobra.Command{
 		} else {
 
 			if chartExistsLocally {
+				if debug == true {
+					log.Println("chartName ", chartName)
+					log.Println("common.ExtendedFolder+ / p[len(p)-1] ", common.ExtendedFolder+"/"+p[len(p)-1])
+				}
 				err := os.Rename(chartName, common.ExtendedFolder+"/"+p[len(p)-1])
 				if err != nil {
 					log.Println("Cant move chart directory")
