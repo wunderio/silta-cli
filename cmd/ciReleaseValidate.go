@@ -83,6 +83,10 @@ var ciReleaseValidateCmd = &cobra.Command{
 		command := fmt.Sprintf(`
 			NAMESPACE='%s'
 			RELEASE_NAME='%s'
+			echo '-----'
+			echo $NAMESPACE
+			echo $RELEASE_NAME
+			echo '-----'
 			# Workaround for previous Helm release stuck in pending state
 			pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
 
