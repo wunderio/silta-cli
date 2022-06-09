@@ -85,6 +85,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 			RELEASE_NAME='%s'
 
 			# Workaround for previous Helm release stuck in pending state
+			echo "Look for malformed release secrets, delete them"
 			pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
 
 			if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
