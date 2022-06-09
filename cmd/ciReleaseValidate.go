@@ -83,17 +83,20 @@ var ciReleaseValidateCmd = &cobra.Command{
 		command := fmt.Sprintf(`
 			NAMESPACE='%s'
 			RELEASE_NAME='%s'
-			echo '-----'
-			echo $NAMESPACE
-			echo $RELEASE_NAME
-			echo '-----'
+
 			# Workaround for previous Helm release stuck in pending state
 			pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
 
 			if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
-				secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
-				echo $secret_to_delete
-				kubectl delete secret -n "$NAMESPACE" "$secret_to_delete"
+				upgrade_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				install_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-install,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				
+				if [[ ! -z "$upgrade_secret_to_delete" ]] ; then
+					kubectl delete secret -n "$NAMESPACE" "$upgrade_secret_to_delete"
+				fi
+				if [[ ! -z "$install_secret_to_delete" ]] ; then
+					kubectl delete secret -n "$NAMESPACE" "$install_secret_to_delete"
+				fi
 			fi
 			`, namespace, releaseName)
 
