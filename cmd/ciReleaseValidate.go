@@ -92,8 +92,10 @@ var ciReleaseValidateCmd = &cobra.Command{
 
 			if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
 				secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				echo $secret_to_delete
 				kubectl delete secret -n "$NAMESPACE" "$secret_to_delete"
-			fi`, namespace, releaseName)
+			fi
+			`, namespace, releaseName)
 
 		pipedExec(command, debug)
 
