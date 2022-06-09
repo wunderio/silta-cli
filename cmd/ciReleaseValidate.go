@@ -79,6 +79,30 @@ var ciReleaseValidateCmd = &cobra.Command{
 			extraClusterType = fmt.Sprintf("--set cluster.type='%s'", clusterType)
 		}
 
+		//Remove release stuck in pending stage
+		command := fmt.Sprintf(`
+			NAMESPACE='%s'
+			RELEASE_NAME='%s'
+
+			# Workaround for previous Helm release stuck in pending state
+			echo "Look for malformed release secrets, delete them"
+			pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
+
+			if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
+				upgrade_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				install_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-install,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				
+				if [[ ! -z "$upgrade_secret_to_delete" ]] ; then
+					kubectl delete secret -n "$NAMESPACE" "$upgrade_secret_to_delete"
+				fi
+				if [[ ! -z "$install_secret_to_delete" ]] ; then
+					kubectl delete secret -n "$NAMESPACE" "$install_secret_to_delete"
+				fi
+			fi
+			`, namespace, releaseName)
+
+		pipedExec(command, debug)
+
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
