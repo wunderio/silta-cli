@@ -158,6 +158,11 @@ var ciReleaseDeployCmd = &cobra.Command{
 				log.Fatal("Nginx image url required (nginx-image-url)")
 			}
 
+			_, errDir := os.Stat(common.ExtendedFolder + "/simple")
+			if os.IsNotExist(errDir) == false {
+				chartName = common.ExtendedFolder + "/simple"
+			}
+
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			// helm release
@@ -203,6 +208,11 @@ var ciReleaseDeployCmd = &cobra.Command{
 		} else if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
 
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
+
+			_, errDir := os.Stat(common.ExtendedFolder + "/frontend")
+			if os.IsNotExist(errDir) == false {
+				chartName = common.ExtendedFolder + "/frontend"
+			}
 
 			// helm release
 			command = fmt.Sprintf(`
@@ -328,6 +338,11 @@ var ciReleaseDeployCmd = &cobra.Command{
 			}
 			if len(shellImageUrl) == 0 {
 				log.Fatal("Shell image url required (shell-image-url)")
+			}
+
+			_, errDir := os.Stat(common.ExtendedFolder + "/drupal")
+			if os.IsNotExist(errDir) == false {
+				chartName = common.ExtendedFolder + "/drupal"
 			}
 
 			// Special updates

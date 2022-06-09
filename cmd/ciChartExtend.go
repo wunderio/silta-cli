@@ -47,19 +47,49 @@ var editChartCmd = &cobra.Command{
 		}
 
 		p := strings.SplitN(chartUrl.Path, "/", 2)
-		if len(p) > 1 && chartExistsLocally == false && p[0] != "." {
-			common.DownloadUntarChart(&c)
+
+		if debug == true {
+			log.Println("p[0] ", p[0])
+			log.Println("p[1] ", p[1])
+			log.Println("deploymentFlag ", deploymentFlag)
+			log.Println("c.Name ", c.Name)
+		}
+
+		_, errDir = os.Stat(common.ExtendedFolder)
+		if os.IsNotExist(errDir) {
+			os.Mkdir(common.ExtendedFolder, 0744)
+		}
+
+		if len(p) == 2 && chartExistsLocally == false && p[0] != "." {
+			//p[0] - name of the repo
+			//p[1] - name of the chart itself
+			if debug {
+				log.Print(common.ExtendedFolder + "/" + p[1] + innerChartFile)
+				log.Print("Chart doesnt exist locally")
+			}
+			common.DownloadUntarChart(&c, true)
 			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(p[1] + innerChartFile)
+			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[1] + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
-			common.WriteChartDefinition(d, p[1]+innerChartFile)
-			common.AppendToChartSchemaFile(chartName+"/values.schema.json", chartName)
+			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[1]+innerChartFile)
+			for _, v := range l.Charts {
+				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", v.Name)
+			}
 		} else {
+
+			if chartExistsLocally {
+				err := os.Rename(chartName, common.ExtendedFolder+"/"+p[len(p)-1])
+				if err != nil {
+					log.Println("Cant move chart directory")
+				}
+			}
 			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(chartName + innerChartFile)
+			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[len(p)-1] + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
-			common.WriteChartDefinition(d, chartName+innerChartFile)
-			common.AppendToChartSchemaFile(chartName+"/values.schema.json", chartName)
+			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[len(p)-1]+innerChartFile)
+			for _, v := range l.Charts {
+				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[len(p)-1]+"/values.schema.json", v.Name)
+			}
 		}
 
 	},

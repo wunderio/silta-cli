@@ -1,15 +1,15 @@
 package common
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os/exec"
 	"strings"
 
-	"github.com/k0kubun/pp/v3"
 	"gopkg.in/yaml.v2"
 )
+
+const ExtendedFolder = "extended-helm-chart"
 
 func ReadCharts(deploymentsFile string) chartList {
 
@@ -45,7 +45,6 @@ func ReadChartDefinition(chartFile string) chartDefinition {
 }
 
 func AppendExtraCharts(charts *chartList, mainchart *chartDefinition) {
-
 	if len(charts.Charts) < 1 {
 		return
 	}
@@ -74,13 +73,19 @@ func WriteChartDefinition(mainchart chartDefinition, ymlfile string) {
 	}
 }
 
-func DownloadUntarChart(chartName *ChartNameVersion) {
+func DownloadUntarChart(chartName *ChartNameVersion, toExtendedFolder bool) {
 
 	command := ""
+	destinationArg := " "
+
+	if toExtendedFolder == true {
+		destinationArg = " -d " + ExtendedFolder + " "
+	}
+
 	if len(chartName.Version) < 1 {
-		command = "helm pull " + chartName.Name + " --untar"
+		command = "helm pull " + chartName.Name + " --untar" + destinationArg
 	} else {
-		command = "helm pull " + chartName.Name + " --version " + chartName.Version + " --untar"
+		command = "helm pull " + chartName.Name + " --version " + chartName.Version + " --untar" + destinationArg
 	}
 	helmCmd, err := exec.Command("bash", "-c", command).CombinedOutput()
 
@@ -91,33 +96,6 @@ func DownloadUntarChart(chartName *ChartNameVersion) {
 
 }
 
-// func AppendToChartSchemaFile1(schemaFile string, chartName string) {
-// 	file, err := ioutil.ReadFile(schemaFile)
-// 	log.Println(schemaFile)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	var data ChartSchema
-// 	json.Unmarshal(file, &data)
-// 	log.Println(&data)
-// }
-
-func AppendToChartSchemaFile1(schemaFile string, chartName string) {
-	file, err := ioutil.ReadFile(schemaFile)
-	log.Println(schemaFile)
-	if err != nil {
-		log.Println(err)
-	}
-	var data interface{}
-	json.Unmarshal(file, &data)
-	arr := data.(map[string]interface{})
-
-	pp.Println(arr)
-
-	data_out, _ := json.Marshal(arr)
-	ioutil.WriteFile(schemaFile+"1", data_out, 0644)
-}
-
 func AppendToChartSchemaFile(schemaFile string, chartName string) {
 	file, err := ioutil.ReadFile(schemaFile)
 	log.Println(schemaFile)
@@ -126,8 +104,10 @@ func AppendToChartSchemaFile(schemaFile string, chartName string) {
 	}
 
 	str := string(file)
-	str = strings.Replace(str, "\"projectName\"", "\"projectName\" : { \"type\": \"string\" }, \""+chartName+`"`, 1)
+	const searchStr = "\"projectName\": { \"type\": \"string\" },"
+	var finalStr = searchStr + ` "` + chartName + "\": { \"type\": \"object\" },"
+	str = strings.Replace(str, searchStr, finalStr, 1)
 
-	ioutil.WriteFile(schemaFile+"1", []byte(str), 0644)
+	ioutil.WriteFile(schemaFile, []byte(str), 0644)
 
 }
