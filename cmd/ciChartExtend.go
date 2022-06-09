@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -55,6 +56,8 @@ var editChartCmd = &cobra.Command{
 			log.Println("c.Name ", c.Name)
 		}
 
+		var helmErr error
+		var helmCmd []byte
 		_, errDir = os.Stat(common.ExtendedFolder)
 		if os.IsNotExist(errDir) {
 			os.Mkdir(common.ExtendedFolder, 0744)
@@ -75,6 +78,8 @@ var editChartCmd = &cobra.Command{
 			for _, v := range l.Charts {
 				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", v.Name)
 			}
+			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[1]
+			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
 		} else {
 
 			if chartExistsLocally {
@@ -90,6 +95,13 @@ var editChartCmd = &cobra.Command{
 			for _, v := range l.Charts {
 				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[len(p)-1]+"/values.schema.json", v.Name)
 			}
+			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[len(p)-1]
+			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
+		}
+
+		if helmErr != nil {
+			log.SetFlags(0) //remove timestamp
+			log.Fatal(string(helmCmd[:]))
 		}
 
 	},
