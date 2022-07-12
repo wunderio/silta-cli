@@ -99,7 +99,7 @@ var ciImageBuildCmd = &cobra.Command{
 
 		if !debug {
 			if reuseExisting {
-				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") {
+				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") || strings.HasSuffix(imageRepoHost, ".pkg.dev") {
 					command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json | grep -q '\"%s\"';", imageUrl, imageTag, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
