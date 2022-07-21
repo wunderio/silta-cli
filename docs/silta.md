@@ -12,6 +12,7 @@ Silta CLI
 
 ### SEE ALSO
 
+* [silta chart](silta_chart.md)	 - CI chart commands
 * [silta ci](silta_ci.md)	 - Silta CI Commands
 * [silta cloud](silta_cloud.md)	 - Kubernetes cloud related commands
 * [silta completion](silta_completion.md)	 - Generate the autocompletion script for the specified shell
