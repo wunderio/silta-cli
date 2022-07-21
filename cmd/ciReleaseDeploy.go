@@ -135,7 +135,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				fi
 
 				# Tag the namespace if it isn't already tagged.
-				if ! kubectl get namespace -l name=$NAMESPACE --no-headers | grep $NAMESPACE &>/dev/null ; then
+				if ! kubectl get namespace -l name=$NAMESPACE --no-headers  2>/dev/null | grep $NAMESPACE &>/dev/null ; then
 					kubectl label namespace "$NAMESPACE" "name=$NAMESPACE" --overwrite
 				fi
 
