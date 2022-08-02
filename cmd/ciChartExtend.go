@@ -74,9 +74,7 @@ var editChartCmd = &cobra.Command{
 			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[1] + innerChartFile)
 			common.AppendExtraCharts(&l, &d)
 			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[1]+innerChartFile)
-			for _, v := range l.Charts {
-				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", v.Name)
-			}
+			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", common.GetChartNamesFromDependencies(l.Charts))
 			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[1]
 			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
 		} else {
@@ -92,12 +90,10 @@ var editChartCmd = &cobra.Command{
 				}
 			}
 			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[len(p)-1] + innerChartFile)
+			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[len(p)-1] + innerChartFile) //source chart
 			common.AppendExtraCharts(&l, &d)
 			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[len(p)-1]+innerChartFile)
-			for _, v := range l.Charts {
-				common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[len(p)-1]+"/values.schema.json", v.Name)
-			}
+			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[len(p)-1]+"/values.schema.json", common.GetChartNamesFromDependencies(l.Charts))
 			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[len(p)-1]
 			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
 		}

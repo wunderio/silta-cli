@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os/exec"
@@ -53,11 +54,19 @@ func AppendExtraCharts(charts *chartList, mainchart *chartDefinition) {
 		if strings.HasPrefix(dependency.Repository, "https://") {
 			command := "helm repo add " + dependency.Name + " " + dependency.Repository
 			helmCmd, _ := exec.Command("bash", "-c", command).CombinedOutput()
-
 			log.Print(string(helmCmd[:]))
+
 		}
 	}
 	mainchart.Dependencies = append(mainchart.Dependencies, charts.Charts...)
+
+	const searchStr = "file://.."
+	for i, dependency := range mainchart.Dependencies {
+		if strings.HasPrefix(dependency.Repository, "file://..") {
+			var finalStr = searchStr + "/" + mainchart.Name + "/charts"
+			mainchart.Dependencies[i].Repository = strings.Replace(dependency.Repository, searchStr, finalStr, 1)
+		}
+	}
 }
 
 func WriteChartDefinition(mainchart chartDefinition, ymlfile string) {
@@ -96,18 +105,33 @@ func DownloadUntarChart(chartName *ChartNameVersion, toExtendedFolder bool) {
 
 }
 
-func AppendToChartSchemaFile(schemaFile string, chartName string) {
+func AppendToChartSchemaFile(schemaFile string, chartNames []string) {
 	file, err := ioutil.ReadFile(schemaFile)
 	log.Println(schemaFile)
 	if err != nil {
 		log.Println(err)
 	}
 
-	str := string(file)
-	const searchStr = "\"projectName\": { \"type\": \"string\" },"
-	var finalStr = searchStr + ` "` + chartName + "\": { \"type\": \"object\" },"
-	str = strings.Replace(str, searchStr, finalStr, 1)
+	var j interface{}
+	err = json.Unmarshal(file, &j)
+	m := j.(map[string]interface{}) //mapped schema json
 
-	ioutil.WriteFile(schemaFile, []byte(str), 0644)
+	var propertiesArray = m["properties"].(map[string]interface{})
+	for _, v := range chartNames {
+		propertiesArray[v] = map[string]interface{}{"type": "object"}
+	}
+	m["properties"] = propertiesArray
 
+	out, _ := json.Marshal(m)
+	ioutil.WriteFile(schemaFile, out, 0644)
+}
+
+func GetChartNamesFromDependencies(dependencies []dependency) []string {
+	names := []string{}
+
+	for _, v := range dependencies {
+		names = append(names, v.Name)
+	}
+
+	return names
 }
