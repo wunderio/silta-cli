@@ -14,7 +14,7 @@ import (
 func TestChartExtensionCmd(t *testing.T) {
 
 	var originalCli = cliBinaryName
-	cliBinaryName = "../../../silta"
+	cliBinaryName = "../../../../silta"
 
 	// Go to main directory
 	wd, _ := os.Getwd()
