@@ -14,7 +14,7 @@ import (
 func TestChartExtensionCmd(t *testing.T) {
 
 	var originalCli = cliBinaryName
-	cliBinaryName = "../../../../silta"
+	cliBinaryName = "../../../silta"
 
 	// Go to main directory
 	wd, _ := os.Getwd()
@@ -28,8 +28,10 @@ func TestChartExtensionCmd(t *testing.T) {
 	log.Print(os.Getwd())
 	helmCmd, _ := exec.Command("bash", "-c", "ls").CombinedOutput()
 	log.Println(string(helmCmd))
-	schema, err := ioutil.ReadFile(common.ExtendedFolder + "/frontend/values.schema.json")
-	chart, err1 := ioutil.ReadFile(common.ExtendedFolder + "/frontend/Chart.yaml")
+	helmCmd1, _ := exec.Command("bash", "-c", "ls extended-helm-chart").CombinedOutput()
+	log.Println(string(helmCmd1))
+	schema, err := ioutil.ReadFile("./" + common.ExtendedFolder + "/frontend/values.schema.json")
+	chart, err1 := ioutil.ReadFile("./" + common.ExtendedFolder + "/frontend/Chart.yaml")
 
 	cliBinaryName = originalCli
 
