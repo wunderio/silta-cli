@@ -27,6 +27,8 @@ func TestChartExtensionCmd(t *testing.T) {
 	schema, err := ioutil.ReadFile(common.ExtendedFolder + "/frontend/values.schema.json")
 	chart, err1 := ioutil.ReadFile(common.ExtendedFolder + "/frontend/Chart.yaml")
 
+	cliBinaryName = originalCli
+
 	if err != nil {
 		log.Println(err)
 		t.FailNow()
@@ -48,7 +50,6 @@ func TestChartExtensionCmd(t *testing.T) {
 	}
 
 	// Cleanup
-	cliBinaryName = originalCli
 	os.RemoveAll(common.ExtendedFolder)
 
 	// Change dir back to previous
