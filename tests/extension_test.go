@@ -31,20 +31,20 @@ func TestChartExtensionCmd(t *testing.T) {
 
 	if err != nil {
 		log.Println(err)
-		t.FailNow()
+		t.Fail()
 	}
 	if err1 != nil {
 		log.Println(err1)
-		t.FailNow()
+		t.Fail()
 	}
 
 	schemaStr := string(schema)
 	chartStr := string(chart)
-	if strings.Contains(schemaStr, "redis") == false {
+	if strings.Contains(schemaStr, "redis") == false && err == nil {
 		log.Println("Redis not present in values.schema.json")
 		t.Fail()
 	}
-	if strings.Contains(chartStr, "redis") == false {
+	if strings.Contains(chartStr, "redis") == false && err1 == nil {
 		log.Println("Redis not present in Chart.yaml")
 		t.Fail()
 	}
