@@ -23,7 +23,7 @@ func TestChartExtensionCmd(t *testing.T) {
 	command := "chart extend --chart-name wunderio/frontend --subchart-list-file deployment_options.yml"
 	environment := []string{}
 	testString := ""
-	CliExecTest(t, command, environment, testString, false)
+	CliExecTest1(t, command, environment, testString, false)
 
 	log.Print(os.Getwd())
 	helmCmd, _ := exec.Command("bash", "-c", "ls").CombinedOutput()
