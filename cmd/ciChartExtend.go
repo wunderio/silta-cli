@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -46,18 +47,60 @@ var editChartCmd = &cobra.Command{
 			c.Version = ""
 		}
 
-		p := strings.SplitN(chartUrl.Path, "/", 2)
-		if len(p) > 1 && chartExistsLocally == false && p[0] != "." {
-			common.DownloadUntarChart(&c)
-			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(p[1] + innerChartFile)
-			common.AppendExtraCharts(&l, &d)
-			common.WriteChartDefinition(d, p[1]+innerChartFile)
+		p := strings.Split(chartUrl.Path, "/")
+		if debug == true {
+			log.Println("p[0] ", p[0])
+			log.Println("p[1] ", p[1])
+			log.Println("deploymentFlag ", deploymentFlag)
+			log.Println("c.Name ", c.Name)
+		}
+
+		var helmErr error
+		var helmCmd []byte
+		_, errDir = os.Stat(common.ExtendedFolder)
+		if os.IsNotExist(errDir) {
+			os.Mkdir(common.ExtendedFolder, 0744)
+		}
+
+		if len(p) == 2 && chartExistsLocally == false && p[0] != "." {
+			//p[0] - name of the repo
+			//p[1] - name of the chart itself
+			if debug {
+				log.Print(common.ExtendedFolder + "/" + p[1] + innerChartFile)
+				log.Print("Chart doesnt exist locally")
+			}
+			common.DownloadUntarChart(&c, true)
+			var chartsToAdd = common.ReadCharts(deploymentFlag)
+			var mainChartDefinition = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[1] + innerChartFile)
+			common.AppendExtraCharts(&chartsToAdd, &mainChartDefinition)
+			common.WriteChartDefinition(mainChartDefinition, common.ExtendedFolder+"/"+p[1]+innerChartFile)
+			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", common.GetChartNamesFromDependencies(chartsToAdd.Charts))
+			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[1]
+			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
 		} else {
+
+			if chartExistsLocally {
+				if debug == true {
+					log.Println("chartName ", chartName)
+					log.Println("common.ExtendedFolder+ / p[len(p)-1] ", common.ExtendedFolder+"/"+p[len(p)-1])
+				}
+				err := os.Rename(chartName, common.ExtendedFolder+"/"+p[len(p)-1])
+				if err != nil {
+					log.Println("Cant move chart directory")
+				}
+			}
 			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(chartName + innerChartFile)
+			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[len(p)-1] + innerChartFile) //source chart
 			common.AppendExtraCharts(&l, &d)
-			common.WriteChartDefinition(d, chartName+innerChartFile)
+			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[len(p)-1]+innerChartFile)
+			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[len(p)-1]+"/values.schema.json", common.GetChartNamesFromDependencies(l.Charts))
+			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[len(p)-1]
+			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
+		}
+
+		if helmErr != nil {
+			log.SetFlags(0) //remove timestamp
+			log.Fatal(string(helmCmd[:]))
 		}
 
 	},

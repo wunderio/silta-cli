@@ -1,0 +1,5 @@
+charts:
+- name: redis
+  version: 16.8.x
+  repository: https://charts.bitnami.com/bitnami
+  condition: redis.enabled

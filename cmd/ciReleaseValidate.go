@@ -105,6 +105,11 @@ var ciReleaseValidateCmd = &cobra.Command{
 
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
+			_, errDir := os.Stat(common.ExtendedFolder + "/drupal")
+			if os.IsNotExist(errDir) == false {
+				chartName = common.ExtendedFolder + "/drupal"
+			}
+
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			// TODO: rewrite the timeout handling and log printing after helm release
