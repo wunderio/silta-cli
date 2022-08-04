@@ -70,11 +70,11 @@ var editChartCmd = &cobra.Command{
 				log.Print("Chart doesnt exist locally")
 			}
 			common.DownloadUntarChart(&c, true)
-			var l = common.ReadCharts(deploymentFlag)
-			var d = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[1] + innerChartFile)
-			common.AppendExtraCharts(&l, &d)
-			common.WriteChartDefinition(d, common.ExtendedFolder+"/"+p[1]+innerChartFile)
-			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", common.GetChartNamesFromDependencies(l.Charts))
+			var chartsToAdd = common.ReadCharts(deploymentFlag)
+			var mainChartDefinition = common.ReadChartDefinition(common.ExtendedFolder + "/" + p[1] + innerChartFile)
+			common.AppendExtraCharts(&chartsToAdd, &mainChartDefinition)
+			common.WriteChartDefinition(mainChartDefinition, common.ExtendedFolder+"/"+p[1]+innerChartFile)
+			common.AppendToChartSchemaFile(common.ExtendedFolder+"/"+p[1]+"/values.schema.json", common.GetChartNamesFromDependencies(chartsToAdd.Charts))
 			helmCmdString := "helm dep update " + common.ExtendedFolder + "/" + p[1]
 			helmCmd, helmErr = exec.Command("bash", "-c", helmCmdString).CombinedOutput()
 		} else {
