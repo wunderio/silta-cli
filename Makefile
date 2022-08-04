@@ -6,10 +6,6 @@ build:
 	go mod download
 	go build -a -gcflags=-trimpath=$(go env GOPATH) -asmflags=-trimpath=$(go env GOPATH) -ldflags "-X github.com/wunderio/silta-cli/internal/common.Version=$(VERSION)" -o silta
 
-build_move:
-	make build
-	cp silta bintest/
-
 test:
 	go test ./tests
 
