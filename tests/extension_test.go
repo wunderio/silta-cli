@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -24,6 +25,9 @@ func TestChartExtensionCmd(t *testing.T) {
 	testString := ""
 	CliExecTest(t, command, environment, testString, false)
 
+	log.Print(os.Getwd())
+	helmCmd, _ := exec.Command("bash", "-c", "ls").CombinedOutput()
+	log.Println(string(helmCmd))
 	schema, err := ioutil.ReadFile(common.ExtendedFolder + "/frontend/values.schema.json")
 	chart, err1 := ioutil.ReadFile(common.ExtendedFolder + "/frontend/Chart.yaml")
 
