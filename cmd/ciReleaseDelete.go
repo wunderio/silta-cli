@@ -57,7 +57,7 @@ var ciReleaseDeleteCmd = &cobra.Command{
 
 		helmClient, err := helmclient.NewClientFromKubeConf(opt)
 		if err != nil {
-			log.Fatalf("cannot create client  from kubeConfig")
+			log.Fatalf("cannot create client from kubeConfig")
 		}
 
 		//Uninstall Helm release
