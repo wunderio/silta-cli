@@ -27,9 +27,10 @@ release_name="${branchname_lower//[^[:alnum:]]/-}"
 suffix_test="${RELEASE_SUFFIX}"
 declare -i total_length=${#suffix_test}+${#release_name}
 suffix=''
-if [[ -n "${RELEASE_SUFFIX}" && $total_length -gt 39 ]]; then
+# if [[ -n "${RELEASE_SUFFIX}" && $total_length -gt 39 ]]; then
+if [[ $total_length -gt 39 ]]; then
   suffix="${RELEASE_SUFFIX}"
-  if [ ${#suffix} -gt 12 ]; then
+  if [[ -n "${RELEASE_SUFFIX}" && ${#suffix} -gt 12 ]]; then
     suffix="$(printf "$suffix" | cut -c 1-7)-$(printf "$suffix" | shasum -a 256 | cut -c 1-4 )"
   fi
   #Maximum length of a release name + release suffix. -1 is for separating '-' char before suffix
