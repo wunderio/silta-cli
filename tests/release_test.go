@@ -35,16 +35,22 @@ func TestReleaseNameCmd(t *testing.T) {
 	testString = `111111111122222222223333333333444444444`
 	CliExecTest(t, command, environment, testString, true)
 
-	// 40 char long release name test
+	// 40 char long release name test.
 	command = "ci release name --branchname 1111111111222222222233333333334444444444 --debug"
 	environment = []string{}
-	testString = `1111111111222222222233333333334444444444`
+	testString = `1111111111222222222233333333334444-808c`
 	CliExecTest(t, command, environment, testString, true)
 
 	// 41 char long release name test
 	command = "ci release name --branchname 11111111112222222222333333333344444444445 --release-suffix 123456789012345 --debug"
 	environment = []string{}
 	testString = `1111111111222222222233-d0c4-1234567-e27a`
+	CliExecTest(t, command, environment, testString, true)
+
+	// 50 char long release name test
+	command = "ci release environmentname --branchname 11111111112222222222333333333344444444445555555555 --debug"
+	environment = []string{}
+	testString = `1111111111222222222233333333334444-81f3`
 	CliExecTest(t, command, environment, testString, true)
 
 	// 41 char release name + 15 char suffix test
@@ -90,7 +96,13 @@ func TestReleaseEnvironmentnameCmd(t *testing.T) {
 	// 40 char long release name test
 	command = "ci release environmentname --branchname 1111111111222222222233333333334444444444 --debug"
 	environment = []string{}
-	testString = `1111111111222222222233333333334444444444`
+	testString = `1111111111222222222233333333334444-808c`
+	CliExecTest(t, command, environment, testString, true)
+
+	// 50 char long release name test
+	command = "ci release environmentname --branchname 11111111112222222222333333333344444444445555555555 --debug"
+	environment = []string{}
+	testString = `1111111111222222222233333333334444-81f3`
 	CliExecTest(t, command, environment, testString, true)
 
 	// 41 char long release name test

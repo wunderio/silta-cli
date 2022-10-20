@@ -7,6 +7,7 @@ import (
 
 	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/spf13/cobra"
+	errs "k8s.io/apimachinery/pkg/api/errors" // k8s errors and handling
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // gcp auth provider
@@ -57,13 +58,22 @@ var ciReleaseDeleteCmd = &cobra.Command{
 
 		helmClient, err := helmclient.NewClientFromKubeConf(opt)
 		if err != nil {
-			log.Fatalf("cannot create client from kubeConfig")
+			log.Fatalf("Cannot create client from kubeConfig")
 		}
 
 		//Uninstall Helm release
 		uninstallErr := helmClient.UninstallReleaseByName(releaseName)
 		if uninstallErr != nil {
 			log.Fatalf("Error removing a release:%s", uninstallErr)
+		}
+
+		deleteErr := clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), releaseName+"-post-release", v1.DeleteOptions{})
+		if deleteErr != nil {
+			if errs.IsNotFound(deleteErr) {
+				//Resource doesnt exist, lets skip printing a message
+			} else {
+				log.Println("Cannot delete post-release job: %s", deleteErr)
+			}
 		}
 
 		//Delete PVCs

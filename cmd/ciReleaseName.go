@@ -37,8 +37,7 @@ var ciReleaseNameCmd = &cobra.Command{
 		releaseName := reg.ReplaceAllString(branchnameLower, "-")
 
 		suffix := ""
-		// TODO: Yes, this part of logic is a bit broken in orb. Keeping it in sync for now, will fix later.
-		if len(releaseSuffix) > 0 && len(releaseSuffix+releaseName) > 39 {
+		if len(releaseSuffix+releaseName) > 39 {
 			suffix = releaseSuffix
 
 			if len(suffix) > 12 {
