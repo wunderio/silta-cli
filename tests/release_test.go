@@ -170,16 +170,35 @@ func TestReleaseDeployCmd(t *testing.T) {
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				echo ""
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
-					echo "$failed_pods"
-					echo ""
-					echo "Please check logs for the pods above"
+					while IFS= read -r pod; do
+						echo "---- ${NAMESPACE} / ${pod} ----"
+						echo "* Events"
+						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
+						echo ""
+						echo "* Logs"
+						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
+						if [[ ! -z "$containers" ]] ; then
+							for container in ${containers}; do
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+							done
+						else
+							echo "no logs found"
+						fi
+
+						echo "----"
+					done <<< "$failed_pods"
+
+					false
+				else
 					true
 				fi
-				false
 			}
+
+			trap show_failing_pods ERR
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -260,16 +279,35 @@ func TestReleaseDeployCmd(t *testing.T) {
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" --no-headers | grep -Ev '([0-9]+)/\1' | grep -Eo '^[^ ]+')
+				echo ""
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
-					echo "$failed_pods"
-					echo ""
-					echo "Please check logs for the pods above"
+					while IFS= read -r pod; do
+						echo "---- ${NAMESPACE} / ${pod} ----"
+						echo "* Events"
+						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
+						echo ""
+						echo "* Logs"
+						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
+						if [[ ! -z "$containers" ]] ; then
+							for container in ${containers}; do
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+							done
+						else
+							echo "no logs found"
+						fi
+
+						echo "----"
+					done <<< "$failed_pods"
+
+					false
+				else
 					true
 				fi
-				false
 			}
+
+			trap show_failing_pods ERR
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -338,7 +376,39 @@ func TestReleaseDeployCmd(t *testing.T) {
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='22'
-			
+
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				echo ""
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					while IFS= read -r pod; do
+						echo "---- ${NAMESPACE} / ${pod} ----"
+						echo "* Events"
+						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
+						echo ""
+						echo "* Logs"
+						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
+						if [[ ! -z "$containers" ]] ; then
+							for container in ${containers}; do
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+							done
+						else
+							echo "no logs found"
+						fi
+
+						echo "----"
+					done <<< "$failed_pods"
+
+					false
+				else
+					true
+				fi
+			}
+
+			trap show_failing_pods ERR
+
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \
@@ -398,7 +468,39 @@ func TestReleaseDeployCmd(t *testing.T) {
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='22'
-			
+
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				echo ""
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					while IFS= read -r pod; do
+						echo "---- ${NAMESPACE} / ${pod} ----"
+						echo "* Events"
+						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
+						echo ""
+						echo "* Logs"
+						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
+						if [[ ! -z "$containers" ]] ; then
+							for container in ${containers}; do
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+							done
+						else
+							echo "no logs found"
+						fi
+
+						echo "----"
+					done <<< "$failed_pods"
+
+					false
+				else
+					true
+				fi
+			}
+
+			trap show_failing_pods ERR
+
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \

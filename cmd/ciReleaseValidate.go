@@ -114,8 +114,8 @@ var ciReleaseValidateCmd = &cobra.Command{
 
 			// TODO: rewrite the timeout handling and log printing after helm release
 			command := fmt.Sprintf(`
-			set -euo pipefail
-			
+			set -Eeuo pipefail
+
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'
@@ -127,7 +127,39 @@ var ciReleaseValidateCmd = &cobra.Command{
 			EXTRA_NOAUTHIPS='%s'
 			EXTRA_VPCNATIVE='%s'
 			EXTRA_CLUSTERTYPE='%s'
-	
+
+			# Detect pods in FAILED state
+			function show_failing_pods() {
+				echo ""
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$failed_pods" ]] ; then
+					echo "Failing pods:"
+					while IFS= read -r pod; do
+						echo "---- ${NAMESPACE} / ${pod} ----"
+						echo "* Events"
+						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
+						echo ""
+						echo "* Logs"
+						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
+						if [[ ! -z "$containers" ]] ; then
+							for container in ${containers}; do
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+							done
+						else
+							echo "no logs found"
+						fi
+
+						echo "----"
+					done <<< "$failed_pods"
+
+					false
+				else
+					true
+				fi
+			}
+
+			trap show_failing_pods ERR
+
 			helm upgrade --dry-run --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
 				${EXTRA_CHART_VERSION} \
