@@ -113,10 +113,11 @@ var ciImageBuildCmd = &cobra.Command{
 
 					} else {
 
-						gcpToken := common.GetGoogleOAuth2Token()
-						repositoryJWT := common.GetGoogleJWT(gcpToken, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
+						gcpToken := common.GetGCPOAuth2Token()
+						repositoryJWT := common.GetGCPJWT(gcpToken, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
 						tags := common.GCPListTags(repositoryJWT, imageIdentifier, imageRepoHost, imageRepoProject)
 						if common.HasString(tags, imageTag) {
+							fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
 							return
 						}
 					}

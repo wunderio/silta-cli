@@ -22,7 +22,7 @@ const (
 	Image
 )
 
-func GetGoogleOAuth2Token() string {
+func GetGCPOAuth2Token() string {
 	// gcp_sa_path - path to GCP service account key in json format
 	gcp_sa_path, exists := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
 	if !exists {
@@ -39,7 +39,7 @@ func GetGoogleOAuth2Token() string {
 // Returns JWT (JSON Web Token) for accessing GCP Container, Artifact registries.
 //
 // If 'scope' is set to 'Catalog', 'gcpProject' and 'imageName' is not used and can be empty strings
-func GetGoogleJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessScope, gcpProject string, imageName string) string {
+func GetGCPJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessScope, gcpProject string, imageName string) string {
 	// <LOCATION.>gcr.io - container registry ,  need url.QueryEscape
 	// <LOCATION>-docker.pkg.dev - artifact registry , dont need url.QueryEscape
 
