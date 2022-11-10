@@ -116,8 +116,6 @@ var ciImageBuildCmd = &cobra.Command{
 						gcpToken := common.GetGCPOAuth2Token()
 						repositoryJWT := common.GetGCPJWT(gcpToken, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
 						tags := common.GCPListTags(repositoryJWT, imageIdentifier, imageRepoHost, imageRepoProject)
-						log.Println("imageTag: ", imageTag)
-						log.Println("tags: ", tags)
 						if common.HasString(tags, imageTag) {
 							fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
 							return
