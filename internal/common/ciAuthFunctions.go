@@ -56,7 +56,6 @@ func GetGoogleJWT(oauth2Token string, imageRepoHost string, scope RegistryAccess
 		requestURL += "repository:" + gcpProject + "/" + imageName + ":pull"
 	}
 
-	//req, err := http.NewRequest("GET", "https://"+imageRepoHost+"/v2/token?service="+imageRepoHost+"&scope=registry:catalog:*", nil)
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		log.Fatalln("Error: ", err)

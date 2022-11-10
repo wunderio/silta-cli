@@ -113,12 +113,9 @@ var ciImageBuildCmd = &cobra.Command{
 
 					} else {
 
-						//token := common.GetOAuth2Token()
-						//token1 := common.GetJWT(token, "europe-north1-docker.pkg.dev", common.Image, "silta-dev/images", "imageName")
-						//tags := common.ListTags(token1, "imageName", "europe-north1-docker.pkg.dev", "silta-dev/images")
-						token := common.GetGoogleOAuth2Token()
-						jwt := common.GetGoogleJWT(token, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
-						tags := common.ListTags(jwt, imageIdentifier, imageRepoHost, imageRepoProject)
+						gcpToken := common.GetGoogleOAuth2Token()
+						repositoryJWT := common.GetGoogleJWT(gcpToken, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
+						tags := common.GCPListTags(repositoryJWT, imageIdentifier, imageRepoHost, imageRepoProject)
 						if common.HasString(tags, imageTag) {
 							return
 						}

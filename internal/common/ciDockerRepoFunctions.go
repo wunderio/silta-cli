@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func ListTags(jwt string, imageName string, imageRepoHost string, imageRepository string) []string {
+func GCPListTags(jwt string, imageName string, imageRepoHost string, imageRepository string) []string {
 
 	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
 	//req, err := http.NewRequest("GET", "https://gcr.io/v2/<your-project>/alpine/tags/list", nil)
