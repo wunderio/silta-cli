@@ -376,6 +376,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='22'
+			DEPLOYMENT_TIMEOUT='21'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -423,6 +424,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" \
 				--wait`
 	CliExecTest(t, command, environment, testString, false)
 
@@ -468,6 +470,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='22'
+			DEPLOYMENT_TIMEOUT='21'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -515,6 +518,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" \
 				--wait`
 	CliExecTest(t, command, environment, testString, false)
 
