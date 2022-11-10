@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/wunderio/silta-cli/internal/common"
 )
 
 // buildCmd represents the build command
@@ -100,11 +101,27 @@ var ciImageBuildCmd = &cobra.Command{
 		if !debug {
 			if reuseExisting {
 				if imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") || strings.HasSuffix(imageRepoHost, ".pkg.dev") {
-					command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json | grep -q '\"%s\"';", imageUrl, imageTag, imageTag)
-					err := exec.Command("bash", "-c", command).Run()
-					if err == nil {
-						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
-						return
+					_, useGCloud := os.LookupEnv("SILTA_USE_GCLOUD")
+					if useGCloud {
+						command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json | grep -q '\"%s\"';", imageUrl, imageTag, imageTag)
+						err := exec.Command("bash", "-c", command).Run()
+
+						if err == nil {
+							fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+							return
+						}
+
+					} else {
+
+						//token := common.GetOAuth2Token()
+						//token1 := common.GetJWT(token, "europe-north1-docker.pkg.dev", common.Image, "silta-dev/images", "imageName")
+						//tags := common.ListTags(token1, "imageName", "europe-north1-docker.pkg.dev", "silta-dev/images")
+						token := common.GetGoogleOAuth2Token()
+						jwt := common.GetGoogleJWT(token, imageRepoHost, common.Image, imageRepoProject, imageIdentifier)
+						tags := common.ListTags(jwt, imageIdentifier, imageRepoHost, imageRepoProject)
+						if common.HasString(tags, imageTag) {
+							return
+						}
 					}
 				} else if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
 					command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, imageTag)
