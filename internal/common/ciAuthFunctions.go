@@ -24,14 +24,15 @@ const (
 
 func GetGoogleOAuth2Token() string {
 	// gcp_sa_path - path to GCP service account key in json format
-	gcp_sa_path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	log.Println(gcp_sa_path)
+	gcp_sa_path, exists := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
+	if !exists {
+		log.Fatalln("GOOGLE_APPLICATION_CREDENTIALS is not set.")
+	}
 	command := "oauth2l fetch --credentials " + gcp_sa_path + " --scope cloud-platform.read-only --cache=\"\""
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-	log.Println(string(out))
 	return string(out)
 }
 
