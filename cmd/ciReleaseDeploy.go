@@ -168,7 +168,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			// helm release
 			command = fmt.Sprintf(`
 			set -Eeuo pipefail
-			
+
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'
@@ -183,6 +183,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			NAMESPACE='%s'
 			SILTA_CONFIG='%s'
 			EXTRA_HELM_FLAGS='%s'
+			DEPLOYMENT_TIMEOUT='%s'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -230,11 +231,12 @@ var ciReleaseDeployCmd = &cobra.Command{
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--timeout "${DEPLOYMENT_TIMEOUT}" \
 				--wait`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname, nginxImageUrl,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
-				namespace, siltaConfig, helmFlags)
+				namespace, siltaConfig, helmFlags, deploymentTimeout)
 			pipedExec(command, debug)
 
 		} else if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
@@ -249,7 +251,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			// helm release
 			command = fmt.Sprintf(`
 			set -Eeuo pipefail
-			
+
 			RELEASE_NAME='%s'
 			CHART_NAME='%s'
 			CHART_REPOSITORY='%s'

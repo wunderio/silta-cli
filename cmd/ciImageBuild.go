@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"log"
 	"os"
@@ -72,18 +71,19 @@ var ciImageBuildCmd = &cobra.Command{
 				--exclude='vendor/autoload.php' \
 				--mtime='2000-01-01 00:00Z' \
 				--clamp-mtime \
-				-cf - '%s' '%s'`,
+				-cf - '%s' '%s' | sha1sum | cut -c 1-40 | tr -d $'\n'`,
 				excludeDockerignore, buildPath, dockerfile)
 
-			// | sha1sum | cut -c 1-40
-			fileListing, _ := exec.Command("bash", "-c", command).CombinedOutput()
-			// if err != nil {
-			// 	log.Fatal("Error (file checksum): ", err)
-			// }
+			fileListing, err := exec.Command("bash", "-c", command).CombinedOutput()
+			if err != nil {
+				log.Fatal("Error (file checksum): ", err)
+			}
+			// Unless golang calculates checksum itself, passing plain output uses just too much memory.
+			imageTag = string(fileListing)
 
 			// Calculate hash sum
-			sha1_hash := fmt.Sprintf("%x", sha1.Sum([]byte(fileListing)))
-			imageTag = sha1_hash[0:40]
+			// sha1_hash := fmt.Sprintf("%x", sha1.Sum([]byte(fileListing)))
+			// imageTag = sha1_hash[0:40]
 		}
 
 		// Add extra image tag for image identification
