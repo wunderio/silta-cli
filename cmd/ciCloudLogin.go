@@ -81,6 +81,9 @@ var cloudLoginCmd = &cobra.Command{
 			if len(kubeConfig) == 0 {
 				kubeConfig = os.Getenv("KUBECTL_CONFIG")
 			}
+			if len(kubeConfigPath) == 0 {
+				kubeConfigPath = os.Getenv("KUBECONFIG")
+			}
 			if len(gcpKeyJson) == 0 {
 				gcpKeyJson = os.Getenv("GCLOUD_KEY_JSON")
 			}
