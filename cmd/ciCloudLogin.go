@@ -55,6 +55,7 @@ var cloudLoginCmd = &cobra.Command{
 		kubeConfigPath, _ := cmd.Flags().GetString("kubeconfigpath")
 
 		gcpKeyJson, _ := cmd.Flags().GetString("gcp-key-json")
+		gcpKeyFilePath, _ := cmd.Flags().GetString("gcp-key-path")
 		gcpProjectName, _ := cmd.Flags().GetString("gcp-project-name")
 		gcpComputeRegion, _ := cmd.Flags().GetString("gcp-compute-region")
 		gcpComputeZone, _ := cmd.Flags().GetString("gcp-compute-zone")
@@ -86,6 +87,9 @@ var cloudLoginCmd = &cobra.Command{
 			}
 			if len(gcpKeyJson) == 0 {
 				gcpKeyJson = os.Getenv("GCLOUD_KEY_JSON")
+			}
+			if len(gcpKeyFilePath) == 0 {
+				gcpKeyFilePath = os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 			}
 			if len(gcpProjectName) == 0 {
 				gcpProjectName = os.Getenv("GCLOUD_PROJECT_NAME")
@@ -145,6 +149,21 @@ var cloudLoginCmd = &cobra.Command{
 				log.Fatal("Error writing kubeconfig:", err)
 			}
 
+			// Save key
+			homedir, _ := os.UserHomeDir()
+			if len(gcpKeyFilePath) == 0 {
+				gcpKeyFilePath = fmt.Sprintf("%s/%s", homedir, "gcp-service-key.json")
+			}
+			f, err := os.Create(gcpKeyFilePath)
+			if err != nil {
+				log.Fatal("Error creating gcp service key file:", err)
+			}
+			_, err = io.WriteString(f, gcpKeyJson)
+			// err := os.WriteFile(gcpKeyFilePath, gcpKeyJson, 0700)
+			if err != nil {
+				log.Fatal("Error writing to gcp service key file:", err)
+			}
+
 		} else if len(gcpKeyJson) > 0 {
 
 			// GCP gcloud login
@@ -159,7 +178,9 @@ var cloudLoginCmd = &cobra.Command{
 
 			// Save key
 			homedir, _ := os.UserHomeDir()
-			gcpKeyFilePath := fmt.Sprintf("%s/%s", homedir, "gcp-service-key.json")
+			if len(gcpKeyFilePath) == 0 {
+				gcpKeyFilePath = fmt.Sprintf("%s/%s", homedir, "gcp-service-key.json")
+			}
 			f, err := os.Create(gcpKeyFilePath)
 			if err != nil {
 				log.Fatal("Error creating gcp service key file:", err)
@@ -242,6 +263,7 @@ func init() {
 	cloudLoginCmd.Flags().String("kubeconfig", "", "Kubernetes config content (plaintext, base64 encoded)")
 	cloudLoginCmd.Flags().String("kubeconfigpath", "~/.kube/config", "Kubernetes config path")
 	cloudLoginCmd.Flags().String("gcp-key-json", "", "Google Cloud service account key (plaintext, json)")
+	cloudLoginCmd.Flags().String("gcp-key-path", "", "Location of Google Cloud service account key file")
 	cloudLoginCmd.Flags().String("gcp-project-name", "", "GCP project name (project id)")
 	cloudLoginCmd.Flags().String("gcp-compute-region", "", "GCP compute region")
 	cloudLoginCmd.Flags().String("gcp-compute-zone", "", "GCP compute zone")
