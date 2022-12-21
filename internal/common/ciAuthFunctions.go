@@ -28,6 +28,13 @@ func GetGCPOAuth2Token() string {
 	if !exists {
 		log.Fatalln("GOOGLE_APPLICATION_CREDENTIALS is not set.")
 	}
+	// check if oauth2l binary exists
+	_, err := exec.LookPath("oauth2l")
+	if err != nil {
+		log.Fatalln("oauth2l binary is not found in $PATH. Install it first.")
+	}
+
+	// get oauth2 token
 	command := "oauth2l fetch --credentials " + gcp_sa_path + " --scope cloud-platform.read-only --cache=\"\""
 	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
