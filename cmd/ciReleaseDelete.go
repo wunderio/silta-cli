@@ -67,7 +67,8 @@ var ciReleaseDeleteCmd = &cobra.Command{
 			log.Fatalf("Error removing a release:%s", uninstallErr)
 		}
 
-		deleteErr := clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), releaseName+"-post-release", v1.DeleteOptions{})
+		propagationPolicy := v1.DeletePropagationBackground
+		deleteErr := clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), releaseName+"-post-release", v1.DeleteOptions{PropagationPolicy: &propagationPolicy})
 		if deleteErr != nil {
 			if errs.IsNotFound(deleteErr) {
 				//Resource doesnt exist, lets skip printing a message
@@ -99,7 +100,7 @@ func init() {
 
 	ciReleaseDeleteCmd.Flags().String("release-name", "", "Release name")
 	ciReleaseDeleteCmd.Flags().String("namespace", "", "Project name (namespace, i.e. \"drupal-project\")")
-	ciReleaseDeleteCmd.Flags().Bool("delete-pvcs", false, "Delete PVCs")
+	ciReleaseDeleteCmd.Flags().Bool("delete-pvcs", false, "Delete PVCs (default: false)")
 
 	ciReleaseDeleteCmd.MarkFlagRequired("release-name")
 	ciReleaseDeleteCmd.MarkFlagRequired("namespace")
