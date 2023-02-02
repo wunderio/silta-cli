@@ -110,5 +110,5 @@ func init() {
 	secretsDecryptCmd.Flags().String("secret-key", "", "Secret key (falls back to SECRET_KEY environment variable. Also see: --secret-key-env)")
 	secretsDecryptCmd.Flags().String("secret-key-env", "", "Environment variable holding symmetrical decryption key.")
 
-	secretsDecryptCmd.MarkFlagRequired("files")
+	secretsDecryptCmd.MarkFlagRequired("file")
 }
