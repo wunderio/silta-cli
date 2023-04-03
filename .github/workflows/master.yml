@@ -52,4 +52,4 @@ jobs:
           overwrite: true
           goversion: "https://go.dev/dl/go1.19.1.linux-amd64.tar.gz"
           binary_name: "silta"
-          ldflags: "-X github.com/wunderio/silta-cli/internal/common.Version=${{ steps.vars.outputs.sha_short }}"
+          ldflags: "-X github.com/wunderio/silta-cli/internal/common.Version=${{ steps.vars.outputs.sha_short }} -s -w"
