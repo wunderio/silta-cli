@@ -45,5 +45,4 @@ func GCPListTags(jwt string, imageName string, imageRepoHost string, imageReposi
 		tags[i] = v.(string)
 	}
 	return tags
-
 }

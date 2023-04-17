@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	az "github.com/wunderio/silta-cli/internal/azure"
+
 	"github.com/spf13/cobra"
 )
 
@@ -235,8 +237,22 @@ var cloudLoginCmd = &cobra.Command{
 				log.Fatal("Cluster name required (cluster-name)")
 			}
 
-			command = fmt.Sprintf("az login --service-principal --username '%s' --tenant '%s' --password '%s';", aksSPAppID, aksTenantID, aksSPPass)
-			command += fmt.Sprintf("az aks get-credentials --only-show-errors --resource-group '%s' --name '%s' --admin", aksResourceGroup, clusterName)
+			// command = fmt.Sprintf("az loginstring --service-principal --username '%s' --tenant '%s' --password '%s';", aksSPAppID, aksTenantID, aksSPPass)
+
+			// Create kubeconfig folder
+			if _, err := os.Stat(filepath.Dir(kubeConfigPath)); os.IsNotExist(err) {
+				_ = os.Mkdir(filepath.Dir(kubeConfigPath), 0750)
+			}
+
+			ctx, cred := az.GetAzureCredentials(aksTenantID)
+			config := az.GetKubeconfig(ctx, *cred, aksResourceGroup, aksSPAppID, clusterName)
+
+			// Write custom cubeconfig to kube config file
+			err := os.WriteFile(kubeConfigPath, config, 0700)
+			if err != nil {
+				log.Fatal("Error writing kubeconfig:", err)
+			}
+			// command += fmt.Sprintf("az aks get-credentials --only-show-errors --resource-group '%s' --name '%s' --admin", aksResourceGroup, clusterName)
 		}
 
 		// Execute login commands
