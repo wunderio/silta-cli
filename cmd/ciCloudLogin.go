@@ -48,6 +48,7 @@ var cloudLoginCmd = &cobra.Command{
 	  - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable
 	  - "--aks-sp-app-id" flag or "AKS_SP_APP_ID" environment variable
 	  - "--aks-sp-password" flag or "AKS_SP_PASSWORD" environment variable
+		- "--aks-subscription-id" flag or "AKS_SP_PASSWORD" environment variable
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -237,22 +238,37 @@ var cloudLoginCmd = &cobra.Command{
 				log.Fatal("Cluster name required (cluster-name)")
 			}
 
-			// command = fmt.Sprintf("az loginstring --service-principal --username '%s' --tenant '%s' --password '%s';", aksSPAppID, aksTenantID, aksSPPass)
+			token, err := az.GetAuthToken(aksTenantID, aksSPAppID, aksSPPass)
+			if err != nil {
+				log.Fatalf("Error: %s", err)
+			}
+
+			subscriptionID, err := az.GetDefaultSubscriptionID(token)
+			if err != nil {
+				log.Fatalf("Error: %s", err)
+			}
 
 			// Create kubeconfig folder
 			if _, err := os.Stat(filepath.Dir(kubeConfigPath)); os.IsNotExist(err) {
 				_ = os.Mkdir(filepath.Dir(kubeConfigPath), 0750)
 			}
 
-			ctx, cred := az.GetAzureCredentials(aksTenantID)
-			config := az.GetKubeconfig(ctx, *cred, aksResourceGroup, aksSPAppID, clusterName)
+			ctx, cred, err := az.GetAzureCredentials(aksTenantID)
+			if err != nil {
+				log.Fatalf("Error: %s", err)
+			}
 
-			// Write custom cubeconfig to kube config file
-			err := os.WriteFile(kubeConfigPath, config, 0700)
+			config, err := az.GetKubeconfig(ctx, *cred, aksResourceGroup, subscriptionID, clusterName)
+			if err != nil {
+				log.Fatalf("Error: %s", err)
+			}
+
+			// Write custom kubeconfig to kube config file
+			err = os.WriteFile(kubeConfigPath, config, 0700)
 			if err != nil {
 				log.Fatal("Error writing kubeconfig:", err)
 			}
-			// command += fmt.Sprintf("az aks get-credentials --only-show-errors --resource-group '%s' --name '%s' --admin", aksResourceGroup, clusterName)
+
 		}
 
 		// Execute login commands
