@@ -27,7 +27,6 @@ type tokenResponse struct {
 }
 
 // Returns the first subscription ID
-// If no IDs are found, 'empty' is set to true
 func GetDefaultSubscriptionID(token string) (subscriptionID string, err error) {
 
 	req, err := http.NewRequest(http.MethodGet, "https://management.azure.com/subscriptions?api-version=2020-01-01", nil)
