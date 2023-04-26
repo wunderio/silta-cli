@@ -253,12 +253,7 @@ var cloudLoginCmd = &cobra.Command{
 				_ = os.Mkdir(filepath.Dir(kubeConfigPath), 0750)
 			}
 
-			ctx, cred, err := az.GetAzureCredentials(aksTenantID)
-			if err != nil {
-				log.Fatalf("Error: %s", err)
-			}
-
-			config, err := az.GetKubeconfig(ctx, *cred, aksResourceGroup, subscriptionID, clusterName)
+			config, err := az.GetKubeconfig(token, subscriptionID, aksResourceGroup, clusterName)
 			if err != nil {
 				log.Fatalf("Error: %s", err)
 			}

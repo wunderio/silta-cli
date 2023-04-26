@@ -1,16 +1,18 @@
 package azure
 
 import (
-	"context"
+	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice"
 )
+
+type Base64Kubeconfig struct {
+	Base64Kubeconfig string `json:"value"`
+	Name             string `json:"name"`
+}
 
 type Subscription struct {
 	SubscriptionID string `json:"subscriptionId"`
@@ -22,37 +24,6 @@ type tokenResponse struct {
 	TokenType    string  `json:"token_type"`
 	ExpiresIn    float64 `json:"expires_in"`
 	ExtExpiresIn float64 `json:"ext_expires_in"`
-}
-
-func GetAzureCredentials(tenantID string) (ctx context.Context, cred *azidentity.DefaultAzureCredential, err error) {
-
-	cred, err = azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{TenantID: tenantID})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ctx = context.Background()
-	return ctx, cred, nil
-}
-
-func GetKubeconfig(ctx context.Context, cred azidentity.DefaultAzureCredential, resourceGroupName string, subscriptionID string, clusterName string) (kubeconfig []byte, err error) {
-
-	mcClient, err := armcontainerservice.NewManagedClustersClient(subscriptionID, &cred, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := mcClient.ListClusterAdminCredentials(ctx, resourceGroupName, clusterName, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Kubeconfigs) > 0 {
-		return resp.Kubeconfigs[0].Value, nil
-	} else {
-		return nil, errors.New("no kubeconfigs are available")
-	}
-
 }
 
 // Returns the first subscription ID
@@ -119,4 +90,36 @@ func GetAuthToken(tenantId string, clientId string, clientSecret string) (string
 		return "", err
 	}
 	return token.AccessToken, nil
+}
+
+func GetKubeconfig(accessToken string, subscriptionId string, resourceGroupName string, clusterName string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodPost, "https://management.azure.com/subscriptions/"+subscriptionId+"/resourceGroups/"+resourceGroupName+"/providers/Microsoft.ContainerService/managedClusters/"+clusterName+"/listClusterAdminCredential?api-version=2023-02-01", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var kubeconfigs struct {
+		Value []Base64Kubeconfig `json:"kubeconfigs"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&kubeconfigs); err != nil {
+		return nil, err
+	}
+
+	if len(kubeconfigs.Value) == 0 {
+		return nil, errors.New("no kubeconfigs found")
+	}
+
+	kconfigByte, err := b64.StdEncoding.DecodeString(kubeconfigs.Value[0].Base64Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	return kconfigByte, nil
 }
