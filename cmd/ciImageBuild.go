@@ -133,7 +133,6 @@ var ciImageBuildCmd = &cobra.Command{
 					imageUrl := fmt.Sprintf("%s/%s/%s-%s", imageRepoHost, imageRepoProject, namespace, imageIdentifier)
 
 					command := fmt.Sprintf("docker manifest inspect '%s/%s/%s-%s:%s' > /dev/null 2>&1", imageRepoHost, imageRepoProject, namespace, imageIdentifier, imageTag)
-					// command := fmt.Sprintf("az acr repository show --name '%s' --image '%s/%s-%s:%s' --only-show-errors 2>&1 > /dev/null", imageRepoHost, imageRepoProject, namespace, imageIdentifier, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
 						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)

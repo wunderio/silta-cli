@@ -48,7 +48,6 @@ var cloudLoginCmd = &cobra.Command{
 	  - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable
 	  - "--aks-sp-app-id" flag or "AKS_SP_APP_ID" environment variable
 	  - "--aks-sp-password" flag or "AKS_SP_PASSWORD" environment variable
-		- "--aks-subscription-id" flag or "AKS_SP_PASSWORD" environment variable
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
