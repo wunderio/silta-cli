@@ -125,9 +125,8 @@ Available flags and environment variables:
 				command = fmt.Sprintf("aws ecr get-login --no-include-email | bash")
 
 			} else if aksSPPass != "" {
-				// AKS & ACR Login
-				command = fmt.Sprintf("az login --service-principal --username '%s' --tenant '%s' --password '%s';\n", aksSPAppID, aksTenantID, aksSPPass)
-				command += fmt.Sprintf("az acr login --name '%s' --only-show-errors", imageRepoHost)
+				// ACR Login
+				command = fmt.Sprintf("echo %q | docker login --username %q --password-stdin %s", aksSPPass, aksSPAppID, imageRepoHost)
 			}
 
 			if command != "" {
