@@ -78,31 +78,27 @@ var ciReleaseDeleteCmd = &cobra.Command{
 		}
 
 		//Delete PVCs
-		if deletePVCs == true {
+		if deletePVCs {
+
 			PVC_client := clientset.CoreV1().PersistentVolumeClaims(namespace)
 
-			// Remove based on release label selector
-			list, err := PVC_client.List(context.TODO(), v1.ListOptions{
-				LabelSelector: "release=" + releaseName,
-			})
-			if err != nil {
-				log.Fatalf("Error getting the list of PVCs: %s", err)
+			selectorLabels := []string{
+				"release",
+				"app.kubernetes.io/instance",
 			}
 
-			for _, v := range list.Items {
-				PVC_client.Delete(context.TODO(), v.Name, v1.DeleteOptions{})
-			}
+			for _, l := range selectorLabels {
+				list, err := PVC_client.List(context.TODO(), v1.ListOptions{
+					LabelSelector: l + "=" + releaseName,
+				})
+				if err != nil {
+					log.Fatalf("Error getting the list of PVCs: %s", err)
+				}
 
-			// Remove based on app.kubernetes.io/instance label
-			list, err = PVC_client.List(context.TODO(), v1.ListOptions{
-				LabelSelector: "release=" + releaseName,
-			})
-			if err != nil {
-				log.Fatalf("Error getting the list of PVCs: %s", err)
-			}
-
-			for _, v := range list.Items {
-				PVC_client.Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+				for _, v := range list.Items {
+					log.Printf("Deleting PVC: %s", v.Name)
+					PVC_client.Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+				}
 			}
 		}
 
