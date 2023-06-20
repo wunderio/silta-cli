@@ -96,7 +96,7 @@ var ciImageBuildCmd = &cobra.Command{
 			extraImageTag = fmt.Sprintf("--tag '%s:%s'", imageUrl, branchName)
 		}
 
-		// TODO: reuseExisting
+		// Reuse existing image if it exists
 
 		if !debug {
 			if reuseExisting {
@@ -108,6 +108,21 @@ var ciImageBuildCmd = &cobra.Command{
 
 						if err == nil {
 							fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+
+							// Add extra tag (branch name) if it does not exist yet
+							if len(extraImageTag) > 0 {
+								command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json | grep -q '\"%s\"';", imageUrl, branchName, branchName)
+								err := exec.Command("bash", "-c", command).Run()
+								if err != nil {
+									// Adding branch name tag to existing image
+									command := fmt.Sprintf("gcloud container images add-tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, branchName)
+									err := exec.Command("bash", "-c", command).Run()
+									if err != nil {
+										log.Fatal("Error (gcloud tag): ", err)
+									}
+								}
+							}
+
 							return
 						}
 
@@ -118,14 +133,49 @@ var ciImageBuildCmd = &cobra.Command{
 						tags := common.GCPListTags(repositoryJWT, namespace+"-"+imageIdentifier, imageRepoHost, imageRepoProject)
 						if common.HasString(tags, imageTag) {
 							fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+
+							// Add extra tag (branch name) if it does not exist yet
+							if len(extraImageTag) > 0 {
+								if !common.HasString(tags, branchName) {
+									// Adding branch name tag to existing image
+									err := exec.Command("bash", "-c", fmt.Sprintf("docker tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, branchName)).Run()
+									if err != nil {
+										log.Fatal("Error (docker tag): ", err)
+									}
+									err = exec.Command("bash", "-c", fmt.Sprintf("docker push '%s:%s'", imageUrl, branchName)).Run()
+									if err != nil {
+										log.Fatal("Error (docker push): ", err)
+									}
+								}
+							}
+
 							return
 						}
 					}
 				} else if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
+
 					command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, imageTag)
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
 						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+
+						// Add extra tag (branch name) if it does not exist yet
+						if len(extraImageTag) > 0 {
+							command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, branchName)
+							err := exec.Command("bash", "-c", command).Run()
+							if err != nil {
+								// Adding branch name tag to existing image
+								err := exec.Command("bash", "-c", fmt.Sprintf("docker tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, branchName)).Run()
+								if err != nil {
+									log.Fatal("Error (docker tag): ", err)
+								}
+								err = exec.Command("bash", "-c", fmt.Sprintf("docker push '%s:%s'", imageUrl, branchName)).Run()
+								if err != nil {
+									log.Fatal("Error (docker push): ", err)
+								}
+							}
+						}
+
 						return
 					}
 				} else if strings.HasSuffix(imageRepoHost, ".azurecr.io") {
@@ -136,8 +186,50 @@ var ciImageBuildCmd = &cobra.Command{
 					err := exec.Command("bash", "-c", command).Run()
 					if err == nil {
 						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+
+						// Add extra tag (branch name) if it does not exist yet
+						if len(extraImageTag) > 0 {
+							command := fmt.Sprintf("docker manifest inspect '%s/%s/%s-%s:%s' > /dev/null 2>&1", imageRepoHost, imageRepoProject, namespace, imageIdentifier, branchName)
+							err := exec.Command("bash", "-c", command).Run()
+							if err != nil {
+								// Get digest of image
+								command := fmt.Sprintf("docker manifest inspect '%s/%s/%s-%s:%s' | jq -r '.manifests[0].digest'", imageRepoHost, imageRepoProject, namespace, imageIdentifier, imageTag)
+								digest, err := exec.Command("bash", "-c", command).Output()
+								if err != nil {
+
+									log.Fatal("Error (docker manifest inspect): ", err)
+								}
+								// Tag image
+								err = exec.Command("bash", "-c", fmt.Sprintf("docker tag '%s/%s/%s-%s@%s' '%s/%s/%s-%s:%s'", imageRepoHost, imageRepoProject, namespace, imageIdentifier, digest, imageRepoHost, imageRepoProject, namespace, imageIdentifier, branchName)).Run()
+								if err != nil {
+									log.Fatal("Error (docker tag): ", err)
+								}
+								// Push image
+								err = exec.Command("bash", "-c", fmt.Sprintf("docker push '%s/%s/%s-%s:%s'", imageRepoHost, imageRepoProject, namespace, imageIdentifier, branchName)).Run()
+								if err != nil {
+									log.Fatal("Error (docker push): ", err)
+								}
+							}
+						}
+
 						return
 					}
+
+				} else {
+					// Generic docker registry, e.g. docker.io
+					imageUrl := fmt.Sprintf("%s/%s-%s", imageRepoHost, imageRepoProject, imageIdentifier)
+
+					// Use generic docker registry API to check if image exists
+					imageRepoUser := os.Getenv("IMAGE_REPO_USER")
+					imageRepoPassword := os.Getenv("IMAGE_REPO_PASSWORD")
+
+					err := exec.Command("bash", "-c", fmt.Sprintf("curl -s -f -lSL -I -o /dev/null -w '%%{http_code}' -u '%s:%s' https://%s/v2/%s/tags/list", imageRepoUser, imageRepoPassword, imageRepoHost, imageUrl)).Run()
+					if err == nil {
+						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
+						// TODO: Add extra tag (branch name) if it does not exist yet
+						return
+					}
+
 				}
 			}
 		}
