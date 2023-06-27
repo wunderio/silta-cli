@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -44,9 +45,15 @@ func GetGCPOAuth2Token() string {
 }
 
 // Returns JWT (JSON Web Token) for accessing GCP Container, Artifact registries.
+// Depericated due to name. Use GetJWT() instead
+func GetGCPJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, gcpProject string, imageName string) string {
+	return GetJWT(authToken, imageRepoHost, scope, gcpProject, imageName)
+}
+
+// Returns JWT (JSON Web Token) for docker registries.
 //
-// If 'scope' is set to 'Catalog', 'gcpProject' and 'imageName' is not used and can be empty strings
-func GetGCPJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessScope, gcpProject string, imageName string) string {
+// If 'scope' is set to 'Catalog', 'projectName' and 'imageName' is not used and can be empty strings
+func GetJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, projectName string, imageName string) string {
 	// <LOCATION.>gcr.io - container registry ,  need url.QueryEscape
 	// <LOCATION>-docker.pkg.dev - artifact registry , dont need url.QueryEscape
 
@@ -54,23 +61,33 @@ func GetGCPJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessSco
 	const ar_substr string = "pkg.dev" // artifact registry domain
 
 	requestURL := "https://" + imageRepoHost + "/v2/token?service=" + imageRepoHost + "&scope="
+
+	if imageRepoHost == "docker.io" {
+		requestURL = "https://auth.docker.io/token?service=registry.docker.io&scope="
+	}
+
 	if scope == Catalog {
 		requestURL += "registry:catalog:*"
 	} else if scope == Image {
-		if !(len(imageName) > 0) || !(len(gcpProject) > 0) {
+		if !(len(imageName) > 0) || !(len(projectName) > 0) {
 			log.Fatal("Error: Image and project(repository) names must be set")
 		}
-		requestURL += "repository:" + gcpProject + "/" + imageName + ":pull"
+		requestURL += "repository:" + projectName + "/" + imageName + ":pull"
 	}
+
+	// TODO: REMOVE ME
+	fmt.Println("GetJWT Request URL: ", requestURL)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		log.Fatalln("Error: ", err)
 	}
 	if strings.Contains(imageRepoHost, gcr_substr) {
-		req.SetBasicAuth(url.QueryEscape("_token"), url.QueryEscape(oauth2Token))
+		req.SetBasicAuth(url.QueryEscape("_token"), url.QueryEscape(authToken))
 	} else if strings.Contains(imageRepoHost, ar_substr) {
-		req.SetBasicAuth("_token", oauth2Token)
+		req.SetBasicAuth("_token", authToken)
+	} else {
+		req.Header.Set("Authorization", "Basic "+string(authToken))
 	}
 
 	resp, err := http.DefaultClient.Do(req)
