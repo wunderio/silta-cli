@@ -23,6 +23,40 @@ const (
 	Image
 )
 
+// Get authentication token from docker config.json
+func GetDockerAuth(imageRepoHost string) (map[string]string, error) {
+
+	// Load docker config file
+	dockerConfigFile := fmt.Sprintf("%s/.docker/config.json", os.Getenv("HOME"))
+
+	dockerConfigFileContent, err := ioutil.ReadFile(dockerConfigFile)
+	if err != nil {
+		return nil, fmt.Errorf("error (ioutil.ReadFile): %w", err)
+	}
+
+	type DockerConfigFile struct {
+		Auths map[string]map[string]string `json:"auths"`
+	}
+
+	var dockerConfigFileJson DockerConfigFile
+
+	err = json.Unmarshal(dockerConfigFileContent, &dockerConfigFileJson)
+	if err != nil {
+		return nil, fmt.Errorf("error (json.Unmarshal on docker config.json): %w", err)
+	}
+
+	// Get authentification credentials for the specified image repository host
+	for key, value := range dockerConfigFileJson.Auths {
+		// Fall back to docker.io if no authentification credentials are found for the specified image repository host
+		if strings.HasPrefix(imageRepoHost, key) || (imageRepoHost == "docker.io" && strings.HasPrefix(key, "https://index.docker.io/")) {
+			// auth = value.(map[string]interface{})["auth"].(string)
+			return value, nil
+		}
+	}
+
+	return nil, fmt.Errorf("error: No authentification credentials found for image repository host %w", imageRepoHost)
+}
+
 func GetGCPOAuth2Token() string {
 	// gcp_sa_path - path to GCP service account key in json format
 	gcp_sa_path, exists := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -53,6 +87,126 @@ func GetGCPJWT(authToken string, imageRepoHost string, scope RegistryAccessScope
 // Returns JWT (JSON Web Token) for docker registries.
 //
 // If 'scope' is set to 'Catalog', 'projectName' and 'imageName' is not used and can be empty strings
+func GetACRJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, projectName string, imageName string) string {
+
+	requestURL := "https://" + imageRepoHost + "/oauth2/token"
+
+	type Data struct {
+		Scope        string `json:"scope"`
+		Service      string `json:"service"`
+		GrantType    string `json:"grant_type"`
+		RefreshToken string `json:"refresh_token"`
+	}
+
+	data := Data{
+		Service:      imageRepoHost,
+		GrantType:    "refresh_token",
+		RefreshToken: authToken,
+	}
+
+	if scope == Catalog {
+		data.Scope = "registry:catalog:*"
+	} else if scope == Image {
+		if !(len(imageName) > 0) || !(len(projectName) > 0) {
+			log.Fatal("Error: Image and project(repository) names must be set")
+		}
+		data.Scope = "repository:" + projectName + "/" + imageName + ":pull"
+	}
+
+	// reqData, _ := json.Marshal(data)
+	// Convert bytes to string.
+	// s := string(b)
+
+	// JSON body
+	// reqData := []byte(`{
+	// 	"scope": "repository:silta-images/drupal-project-k8s-nginx:pull",
+	// 	"service": "siltaimageregistry.azurecr.io",
+	// 	"grant_type": "refresh_token",
+	// 	"refresh_token": "` + authToken + `",
+	// }`)
+
+	// ------------------
+
+	// apiUrl := "https://api.com"
+	// resource := "/user/"
+	reqData := url.Values{}
+	reqData.Set("scope", "repository:silta-images/drupal-project-k8s-nginx:pull")
+	reqData.Set("service", "siltaimageregistry.azurecr.io")
+	reqData.Set("grant_type", "refresh_token")
+	reqData.Set("refresh_token", authToken)
+
+	// u, _ := url.ParseRequestURI(requestURL)
+	// u.Path = resource
+	// urlStr := u.String() // "https://api.com/user/"
+
+	// client := &http.Client{}
+	// r, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(data.Encode())) // URL-encoded payload
+	// r.Header.Add("Authorization", "auth_token=\"XXXXXXX\"")
+	// r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	// resp, _ := client.Do(r)
+
+	// ---------------
+
+	fmt.Println(data)
+
+	// // Create a HTTP post request
+	// r, err := http.NewRequest("POST", posturl, bytes.NewBuffer(body))
+
+	req, err := http.NewRequest("POST", requestURL, strings.NewReader(reqData.Encode()))
+	// req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(reqData))
+	if err != nil {
+		log.Fatalln("Request error: ", err)
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// if strings.Contains(imageRepoHost, gcr_substr) {
+	// 	req.SetBasicAuth(url.QueryEscape("_token"), url.QueryEscape(authToken))
+	// } else if strings.Contains(imageRepoHost, ar_substr) {
+	// 	req.SetBasicAuth("_token", authToken)
+	// } else {
+	// 	req.Header.Set("Authorization", "Basic "+string(authToken))
+	// }
+
+	// TODO: REMOVE ME
+	fmt.Println(requestURL)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	// resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+	defer resp.Body.Close()
+	response_json, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+
+	// TODO: REMOVE ME
+	fmt.Printf("Response: %s\n", response_json)
+
+	// Parsing out token from response
+	var response_data map[string]interface{}
+	err = json.Unmarshal(response_json, &response_data)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+	rawToken, ok := response_data["access_token"]
+	if !ok {
+		log.Fatal("Error: couldnt parse key 'token'")
+	}
+	token, ok := rawToken.(string)
+	if !ok {
+		log.Fatal("Error: couldnt parse out raw token value")
+	}
+	return string(token)
+}
+
+// Returns JWT (JSON Web Token) for docker registries.
+//
+// If 'scope' is set to 'Catalog', 'projectName' and 'imageName' is not used and can be empty strings
 func GetJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, projectName string, imageName string) string {
 	// <LOCATION.>gcr.io - container registry ,  need url.QueryEscape
 	// <LOCATION>-docker.pkg.dev - artifact registry , dont need url.QueryEscape
@@ -60,23 +214,20 @@ func GetJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, p
 	const gcr_substr string = "gcr.io" // container registry domain
 	const ar_substr string = "pkg.dev" // artifact registry domain
 
-	requestURL := "https://" + imageRepoHost + "/v2/token?service=" + imageRepoHost + "&scope="
+	requestURL := "https://" + imageRepoHost + "/v2/token?service=" + imageRepoHost
 
 	if imageRepoHost == "docker.io" {
-		requestURL = "https://auth.docker.io/token?service=registry.docker.io&scope="
+		requestURL = "https://auth.docker.io/token?service=registry.docker.io"
 	}
 
 	if scope == Catalog {
-		requestURL += "registry:catalog:*"
+		requestURL += "&scope=registry:catalog:*"
 	} else if scope == Image {
 		if !(len(imageName) > 0) || !(len(projectName) > 0) {
 			log.Fatal("Error: Image and project(repository) names must be set")
 		}
-		requestURL += "repository:" + projectName + "/" + imageName + ":pull"
+		requestURL += "&scope=repository:" + projectName + "/" + imageName + ":pull"
 	}
-
-	// TODO: REMOVE ME
-	fmt.Println("GetJWT Request URL: ", requestURL)
 
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {

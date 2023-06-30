@@ -6,74 +6,140 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
-// TODO: REMOVE ME
-func ListImageTags(jwt string, imageName string, imageRepoHost string, imageRepository string) []string {
+func ListImageTagSiblings(authenticator remote.Option, imageUrl string, imageTag string) []string {
 
-	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
+	// Docker.io registry API does not return digest for tags so we need to get all tags and then get the digest for each tag.
+	// Same for ACR
 
-	if imageRepoHost == "docker.io" {
-		requestURL = "https://registry-1.docker.io/v2/" + imageRepository + "/" + imageName + "/tags/list"
-	}
-
-	// TODO: REMOVE ME
-	fmt.Println("ListImageTags Request URL: ", requestURL)
-
-	//req, err := http.NewRequest("GET", "https://gcr.io/v2/<your-project>/alpine/tags/list", nil)
-	req, err := http.NewRequest("GET", requestURL, nil)
+	// Get all image tags
+	ref, err := name.ParseReference(imageUrl)
 	if err != nil {
-		log.Fatalln("Error: ", err)
+		log.Fatal("Error: ", err)
 	}
-
-	req.Header.Set("Authorization", "Bearer "+jwt)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatalln("Error: ", err)
-	}
-
-	defer resp.Body.Close()
-
-	response_json, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln("Error: ", err)
-	}
-
-	// TODO: REMOVE ME
-	fmt.Println("ListImageTags Response: ", string(response_json))
-
-	// Parsing out token from response
-	var j interface{}
-	err = json.Unmarshal(response_json, &j)
-	m := j.(map[string]interface{})
-
+	img, err := remote.List(ref.Context(), authenticator)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	tagsArr := m["tags"].([]interface{})
-	tags := make([]string, len(tagsArr))
-	for i, v := range tagsArr {
-		tags[i] = v.(string)
+	digests := make(map[string][]string)
+
+	// Get image digest for each tag
+	for _, tag := range img {
+
+		requestUrl := fmt.Sprintf("%s:%s", imageUrl, tag)
+		ref, err := name.ParseReference(requestUrl)
+		if err != nil {
+			panic(err)
+		}
+		img, err := remote.Get(ref, authenticator)
+		if err != nil {
+			panic(err)
+		}
+
+		digest := img.Digest.String()
+		digests[digest] = append(digests[digest], tag)
 	}
-	return tags
+
+	// Iterate digests and find the one that matches the imageTag
+	for _, tags := range digests {
+		for _, tag := range tags {
+			// Return all sibling tags
+			if tag == imageTag {
+				return tags
+			}
+		}
+	}
+
+	return nil
+}
+func ACRListImageTagSiblings(jwt string, imageName string, imageRepoHost string, imageRepository string, imageTag string) []string {
+
+	// Docker.io registry API does not return digest for tags so we need to get all tags and then get the digest for each tag.
+
+	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
+	// requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/manifests/" + imageTag
+
+	// /acr/v1/{name}/_tags
+
+	fmt.Println("requestURL: ", requestURL)
+
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+jwt)
+
+	// Accept header string delimited by comma.
+
+	// Request config.digest section
+	req.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+
+	defer resp.Body.Close()
+
+	response_json, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+
+	fmt.Println(string(response_json))
+
+	// // Get all image tags
+	// ref, err := name.ParseReference(imageUrl)
+	// if err != nil {
+	// 	log.Fatal("Error: ", err)
+	// }
+	// img, err := remote.List(ref.Context(), authenticator)
+	// if err != nil {
+	// 	log.Fatal("Error: ", err)
+	// }
+
+	// digests := make(map[string][]string)
+
+	// // Get image digest for each tag
+	// for _, tag := range img {
+
+	// 	requestUrl := fmt.Sprintf("%s:%s", imageUrl, tag)
+	// 	ref, err := name.ParseReference(requestUrl)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	img, err := remote.Get(ref, authenticator)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	digest := img.Digest.String()
+	// 	digests[digest] = append(digests[digest], tag)
+	// }
+
+	// // Iterate digests and find the one that matches the imageTag
+	// for _, tags := range digests {
+	// 	for _, tag := range tags {
+	// 		// Return all sibling tags
+	// 		if tag == imageTag {
+	// 			return tags
+	// 		}
+	// 	}
+	// }
+
+	return nil
 }
 
-func ListImageTagSiblings(jwt string, imageName string, imageRepoHost string, imageRepository string, imageTag string) []string {
+func GCPListImageTagSiblings(jwt string, imageName string, imageRepoHost string, imageRepository string, imageTag string) []string {
 
-	if imageRepoHost == "docker.io" {
-		imageRepoHost = "registry-1.docker.io"
-	}
+	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
 
-	// requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
-
-	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/manifests/" + imageTag
-
-	// TODO: REMOVE ME
-	fmt.Println("ListImageTags Request URL: ", requestURL)
-
-	//req, err := http.NewRequest("GET", "https://gcr.io/v2/<your-project>/alpine/tags/list", nil)
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		log.Fatalln("Error: ", err)
@@ -93,7 +159,9 @@ func ListImageTagSiblings(jwt string, imageName string, imageRepoHost string, im
 		log.Fatalln("Error: ", err)
 	}
 
-	fmt.Printf("ListImageTagSiblings Response: %s\n", string(response_json))
+	fmt.Println(string(response_json))
+
+	// Docker hub does not return manifest section with digest to tag relation, use ListImageTagSiblings instead!
 
 	// Response (Google AR via Registry API)
 	// {
@@ -141,8 +209,6 @@ func ListImageTagSiblings(jwt string, imageName string, imageRepoHost string, im
 	//         "master3"
 	//     ]
 	// }
-
-	// fmt.Printf("ListImageTagSiblings Response: %s\n", string(response_json))
 
 	// Parsing out token from response
 	type Manifest struct {
