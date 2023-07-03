@@ -151,38 +151,10 @@ var ciImageBuildCmd = &cobra.Command{
 							return
 						}
 					}
-				} else if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
-
-					command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, imageTag)
-					err := exec.Command("bash", "-c", command).Run()
-					if err == nil {
-						fmt.Printf("Image %s:%s already exists, existing image will be used.", imageUrl, imageTag)
-
-						// TODO: Add extra tag (branch name) if it does not exist yet
-						if len(extraImageTag) > 0 {
-							command := fmt.Sprintf("aws ecr describe-images --repository-name='%s' --image-ids='imageTag=%s' 2>&1 > /dev/null", imageUrl, branchName)
-							err := exec.Command("bash", "-c", command).Run()
-							if err != nil {
-								// TODO: docker pull before tagging and pushing
-
-								// Adding branch name tag to existing image
-								err := exec.Command("bash", "-c", fmt.Sprintf("docker tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, branchName)).Run()
-								if err != nil {
-									log.Fatal("Error (docker tag): ", err)
-								}
-								err = exec.Command("bash", "-c", fmt.Sprintf("docker push '%s:%s'", imageUrl, branchName)).Run()
-								if err != nil {
-									log.Fatal("Error (docker push): ", err)
-								}
-							}
-						}
-
-						return
-					}
 
 				} else {
 					// Generic docker registry, e.g. docker.io
-					// Supports ACR, AR & GCR
+					// Supports ACR, AR, GCR and ECR
 
 					// Reuse docker cli credentials
 					authenticator := remote.WithAuthFromKeychain(authn.DefaultKeychain)
@@ -233,10 +205,12 @@ var ciImageBuildCmd = &cobra.Command{
 
 		// Create AWS/ECR repository (ECR requires a dedicated repository per project)
 		if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
-			command = fmt.Sprintf("aws ecr describe-repositories --repository-name '%s'", imageUrl)
+
+			command = fmt.Sprintf("aws ecr describe-repositories --repository-name '%s/%s-%s'", imageRepoProject, namespace, imageIdentifier)
 			err := exec.Command("bash", "-c", command).Run()
 			if err != nil {
-				command = fmt.Sprintf("aws ecr create-repository --repository-name '%s'", imageUrl)
+
+				command = fmt.Sprintf("aws ecr create-repository --repository-name '%s/%s-%s'", imageRepoProject, namespace, imageIdentifier)
 				err = exec.Command("bash", "-c", command).Run()
 				if err != nil {
 					log.Fatal("Error (aws ecr create-repository): ", err)

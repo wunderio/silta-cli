@@ -7,19 +7,21 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
+// Get image digest from registry
 func GetImageTagDigest(authenticator remote.Option, imageUrl string, imageTag string) string {
 
-	// Get image digest for each tag
 	requestUrl := fmt.Sprintf("%s:%s", imageUrl, imageTag)
 	ref, err := name.ParseReference(requestUrl)
 	if err != nil {
 		return ""
 	}
+	// Get image manifest
 	img, err := remote.Get(ref, authenticator)
 	if err != nil {
 		return ""
 	}
 
+	// Extract image digest
 	digest := img.Digest.String()
 	return digest
 }
