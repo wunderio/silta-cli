@@ -106,52 +106,49 @@ var ciImageBuildCmd = &cobra.Command{
 				_, useGCloud := os.LookupEnv("SILTA_USE_GCLOUD")
 
 				if useGCloud && (imageRepoHost == "gcr.io" || strings.HasSuffix(imageRepoHost, ".gcr.io") || strings.HasSuffix(imageRepoHost, ".pkg.dev")) {
-					// _, useGCloud := os.LookupEnv("SILTA_USE_GCLOUD")
-					if useGCloud {
-						// Get image tags via gcloud
-						command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json", imageUrl, imageTag)
-						output, err := exec.Command("bash", "-c", command).CombinedOutput()
-						if err != nil {
-							log.Fatal("Error (gcloud list-tags): ", err)
-						}
-						// Unmarshal or Decode the JSON to the interface.
-						type TagList struct {
-							Digest string   `json:"digest"`
-							Tags   []string `json:"tags"`
-						}
-						var taglist []TagList
-						err = json.Unmarshal([]byte(output), &taglist)
-						if err != nil {
-							log.Fatal("Error (json unmarshal): ", err)
-						}
-						var tagExists bool = false
-						var extraTagExists bool = false
-						for _, tag := range taglist {
-							for _, t := range tag.Tags {
-								if t == imageTag {
-									tagExists = true
-								}
-								if len(extraImageTag) > 0 && t == extraImageTag {
-									extraTagExists = true
-								}
+
+					// Get image tags via gcloud
+					command := fmt.Sprintf("gcloud container images list-tags '%s' --filter='tags:%s' --format=json", imageUrl, imageTag)
+					output, err := exec.Command("bash", "-c", command).CombinedOutput()
+					if err != nil {
+						log.Fatal("Error (gcloud list-tags): ", err)
+					}
+					// Unmarshal or Decode the JSON to the interface.
+					type TagList struct {
+						Digest string   `json:"digest"`
+						Tags   []string `json:"tags"`
+					}
+					var taglist []TagList
+					err = json.Unmarshal([]byte(output), &taglist)
+					if err != nil {
+						log.Fatal("Error (json unmarshal): ", err)
+					}
+					var tagExists bool = false
+					var extraTagExists bool = false
+					for _, tag := range taglist {
+						for _, t := range tag.Tags {
+							if t == imageTag {
+								tagExists = true
 							}
-						}
-						// If tag exists in taglist, return and don't rebuild.
-						if tagExists {
-							fmt.Printf("Image %s:%s already exists, existing image will be used.\n", imageUrl, imageTag)
-							// Add extra tag if it does not exist yet
-							if len(extraImageTag) > 0 && !extraTagExists {
-								fmt.Printf("Image %s:%s already exists, but extra tag %s:%s does not exist yet, it will be added.\n", imageUrl, imageTag, imageUrl, extraImageTag)
-								command := fmt.Sprintf("gcloud container images add-tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, extraImageTag)
-								err = exec.Command("bash", "-c", command).Run()
-								if err != nil {
-									log.Fatal("Error (gcloud add-tag): ", err)
-								}
+							if len(extraImageTag) > 0 && t == extraImageTag {
+								extraTagExists = true
 							}
-							return
 						}
 					}
-
+					// If tag exists in taglist, return and don't rebuild.
+					if tagExists {
+						fmt.Printf("Image %s:%s already exists, existing image will be used.\n", imageUrl, imageTag)
+						// Add extra tag if it does not exist yet
+						if len(extraImageTag) > 0 && !extraTagExists {
+							fmt.Printf("Image %s:%s already exists, but extra tag %s:%s does not exist yet, it will be added.\n", imageUrl, imageTag, imageUrl, extraImageTag)
+							command := fmt.Sprintf("gcloud container images add-tag '%s:%s' '%s:%s'", imageUrl, imageTag, imageUrl, extraImageTag)
+							err = exec.Command("bash", "-c", command).Run()
+							if err != nil {
+								log.Fatal("Error (gcloud add-tag): ", err)
+							}
+						}
+						return
+					}
 				} else {
 					// Generic docker registry, e.g. docker.io
 					// Supports ACR, AR, GCR and ECR
