@@ -83,13 +83,18 @@ var ciReleaseDeleteCmd = &cobra.Command{
 			PVC_client := clientset.CoreV1().PersistentVolumeClaims(namespace)
 
 			selectorLabels := []string{
+				"app",
 				"release",
 				"app.kubernetes.io/instance",
 			}
 
 			for _, l := range selectorLabels {
+				selector := l + "=" + releaseName
+				if l == "app" {
+					selector = l + "=" + releaseName + "-es"
+				}
 				list, err := PVC_client.List(context.TODO(), v1.ListOptions{
-					LabelSelector: l + "=" + releaseName,
+					LabelSelector: selector,
 				})
 				if err != nil {
 					log.Fatalf("Error getting the list of PVCs: %s", err)
