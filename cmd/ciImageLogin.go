@@ -123,6 +123,8 @@ Available flags and environment variables:
 			} else if awsSecretAccessKey != "" {
 				// ECR login
 				command = fmt.Sprintf("aws ecr get-login --no-include-email | bash")
+				// TODO: use aws cli v2
+				// command = fmt.Sprintf("echo %q | docker login --username AWS --password-stdin %s", awsSecretAccessKey, imageRepoHost)
 
 			} else if aksSPPass != "" {
 				// ACR Login

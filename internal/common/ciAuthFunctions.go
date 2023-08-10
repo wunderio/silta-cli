@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"os/exec"
 	"strings"
 )
 
@@ -22,45 +20,29 @@ const (
 	Image
 )
 
-func GetGCPOAuth2Token() string {
-	// gcp_sa_path - path to GCP service account key in json format
-	gcp_sa_path, exists := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS")
-	if !exists {
-		log.Fatalln("GOOGLE_APPLICATION_CREDENTIALS is not set.")
-	}
-	// check if oauth2l binary exists
-	_, err := exec.LookPath("oauth2l")
-	if err != nil {
-		log.Fatalln("oauth2l binary is not found in $PATH. Install it first.")
-	}
-
-	// get oauth2 token
-	command := "oauth2l fetch --credentials " + gcp_sa_path + " --scope cloud-platform.read-only --cache=\"\""
-	out, err := exec.Command("bash", "-c", command).CombinedOutput()
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-	return string(out)
-}
-
-// Returns JWT (JSON Web Token) for accessing GCP Container, Artifact registries.
+// Returns JWT (JSON Web Token) for docker registries.
 //
-// If 'scope' is set to 'Catalog', 'gcpProject' and 'imageName' is not used and can be empty strings
-func GetGCPJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessScope, gcpProject string, imageName string) string {
+// If 'scope' is set to 'Catalog', 'projectName' and 'imageName' is not used and can be empty strings
+func GetJWT(authToken string, imageRepoHost string, scope RegistryAccessScope, projectName string, imageName string) string {
 	// <LOCATION.>gcr.io - container registry ,  need url.QueryEscape
 	// <LOCATION>-docker.pkg.dev - artifact registry , dont need url.QueryEscape
 
 	const gcr_substr string = "gcr.io" // container registry domain
 	const ar_substr string = "pkg.dev" // artifact registry domain
 
-	requestURL := "https://" + imageRepoHost + "/v2/token?service=" + imageRepoHost + "&scope="
+	requestURL := "https://" + imageRepoHost + "/v2/token?service=" + imageRepoHost
+
+	if imageRepoHost == "docker.io" {
+		requestURL = "https://auth.docker.io/token?service=registry.docker.io"
+	}
+
 	if scope == Catalog {
-		requestURL += "registry:catalog:*"
+		requestURL += "&scope=registry:catalog:*"
 	} else if scope == Image {
-		if !(len(imageName) > 0) || !(len(gcpProject) > 0) {
+		if !(len(imageName) > 0) || !(len(projectName) > 0) {
 			log.Fatal("Error: Image and project(repository) names must be set")
 		}
-		requestURL += "repository:" + gcpProject + "/" + imageName + ":pull"
+		requestURL += "&scope=repository:" + projectName + "/" + imageName + ":pull"
 	}
 
 	req, err := http.NewRequest("GET", requestURL, nil)
@@ -68,9 +50,11 @@ func GetGCPJWT(oauth2Token string, imageRepoHost string, scope RegistryAccessSco
 		log.Fatalln("Error: ", err)
 	}
 	if strings.Contains(imageRepoHost, gcr_substr) {
-		req.SetBasicAuth(url.QueryEscape("_token"), url.QueryEscape(oauth2Token))
+		req.SetBasicAuth(url.QueryEscape("_token"), url.QueryEscape(authToken))
 	} else if strings.Contains(imageRepoHost, ar_substr) {
-		req.SetBasicAuth("_token", oauth2Token)
+		req.SetBasicAuth("_token", authToken)
+	} else {
+		req.Header.Set("Authorization", "Basic "+string(authToken))
 	}
 
 	resp, err := http.DefaultClient.Do(req)

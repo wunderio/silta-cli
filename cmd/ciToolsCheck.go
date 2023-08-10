@@ -17,7 +17,6 @@ var ciToolsCheckCmd = &cobra.Command{
 		bins := make(map[string]string)
 		bins["helm"] = "version"
 		bins["kubectl"] = "version"
-		bins["oauth2l"] = ""
 
 		for bin, cmd := range bins {
 			_, err := exec.LookPath(bin)

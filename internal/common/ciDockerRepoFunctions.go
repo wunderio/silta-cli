@@ -1,48 +1,27 @@
 package common
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"log"
-	"net/http"
+	"fmt"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
-func GCPListTags(jwt string, imageName string, imageRepoHost string, imageRepository string) []string {
+// Get image digest from registry
+func GetImageTagDigest(authenticator remote.Option, imageUrl string, imageTag string) string {
 
-	requestURL := "https://" + imageRepoHost + "/v2/" + imageRepository + "/" + imageName + "/tags/list"
-	//req, err := http.NewRequest("GET", "https://gcr.io/v2/<your-project>/alpine/tags/list", nil)
-	req, err := http.NewRequest("GET", requestURL, nil)
+	requestUrl := fmt.Sprintf("%s:%s", imageUrl, imageTag)
+	ref, err := name.ParseReference(requestUrl)
 	if err != nil {
-		log.Fatalln("Error: ", err)
+		return ""
 	}
-
-	req.Header.Set("Authorization", "Bearer "+jwt)
-
-	resp, err := http.DefaultClient.Do(req)
+	// Get image manifest
+	img, err := remote.Get(ref, authenticator)
 	if err != nil {
-		log.Fatalln("Error: ", err)
+		return ""
 	}
 
-	defer resp.Body.Close()
-
-	response_json, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln("Error: ", err)
-	}
-
-	// Parsing out token from response
-	var j interface{}
-	err = json.Unmarshal(response_json, &j)
-	m := j.(map[string]interface{})
-
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	tagsArr := m["tags"].([]interface{})
-	tags := make([]string, len(tagsArr))
-	for i, v := range tagsArr {
-		tags[i] = v.(string)
-	}
-	return tags
+	// Extract image digest
+	digest := img.Digest.String()
+	return digest
 }
