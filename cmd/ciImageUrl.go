@@ -22,6 +22,7 @@ var ciImageUrlCmd = &cobra.Command{
 		namespace, _ := cmd.Flags().GetString("namespace")
 		imageIdentifier, _ := cmd.Flags().GetString("image-identifier")
 		imageTag, _ := cmd.Flags().GetString("image-tag")
+		imageTagPrefix, _ := cmd.Flags().GetString("image-tag-prefix")
 		dockerfile, _ := cmd.Flags().GetString("dockerfile")
 		buildPath, _ := cmd.Flags().GetString("build-path")
 
@@ -79,6 +80,11 @@ var ciImageUrlCmd = &cobra.Command{
 			// Unless golang calculates checksum itself, passing plain output uses just too much memory.
 			imageTag = string(fileListing)
 
+			// Add prefix if it is specified
+			if len(imageTagPrefix) > 0 {
+				imageTag = imageTagPrefix + string('-') + imageTag
+			}
+
 			// Calculate hash sum
 			// sha1_hash := fmt.Sprintf("%x", sha1.Sum([]byte(fileListing)))
 			// imageTag = sha1_hash[0:40]
@@ -98,6 +104,7 @@ func init() {
 	ciImageUrlCmd.Flags().String("namespace", "", "Project name (namespace, i.e. \"drupal-project\")")
 	ciImageUrlCmd.Flags().String("image-identifier", "", "Docker image identifier (i.e. \"php\")")
 	ciImageUrlCmd.Flags().String("image-tag", "", "Docker image tag (optional)")
+	ciImageUrlCmd.Flags().String("image-tag-prefix", "", "Prefix for Docker image tag (optional)")
 	ciImageUrlCmd.Flags().String("dockerfile", "", "Dockerfile (relative path)")
 	ciImageUrlCmd.Flags().String("build-path", "", "Docker image build path")
 

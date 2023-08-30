@@ -28,6 +28,7 @@ var ciImageBuildCmd = &cobra.Command{
 		branchName, _ := cmd.Flags().GetString("branchname")
 		imageIdentifier, _ := cmd.Flags().GetString("image-identifier")
 		imageTag, _ := cmd.Flags().GetString("image-tag")
+		imageTagPrefix, _ := cmd.Flags().GetString("image-tag-prefix")
 		dockerfile, _ := cmd.Flags().GetString("dockerfile")
 		reuseExisting, _ := cmd.Flags().GetBool("image-reuse")
 		buildPath, _ := cmd.Flags().GetString("build-path")
@@ -84,6 +85,11 @@ var ciImageBuildCmd = &cobra.Command{
 			}
 			// Unless golang calculates checksum itself, passing plain output uses just too much memory.
 			imageTag = string(fileListing)
+
+			// Add prefix if it is specified
+			if len(imageTagPrefix) > 0 {
+				imageTag = imageTagPrefix + string('-') + imageTag
+			}
 
 			// Calculate hash sum
 			// sha1_hash := fmt.Sprintf("%x", sha1.Sum([]byte(fileListing)))
@@ -236,6 +242,7 @@ func init() {
 	ciImageBuildCmd.Flags().String("branchname", "", "Branch name (used as an extra tag for image identification)")
 	ciImageBuildCmd.Flags().String("image-identifier", "", "Docker image identifier (i.e. \"php\")")
 	ciImageBuildCmd.Flags().String("image-tag", "", "Docker image tag (optional, check '--image-reuse' flag)")
+	ciImageBuildCmd.Flags().String("image-tag-prefix", "", "Prefix for Docker image tag (optional)")
 	ciImageBuildCmd.Flags().String("dockerfile", "", "Dockerfile (relative path)")
 	ciImageBuildCmd.Flags().String("build-path", "", "Docker image build path")
 	ciImageBuildCmd.Flags().Bool("image-reuse", true, "Do not rebuild image if identical image:tag exists in remote")
