@@ -28,9 +28,10 @@ func TestImageLoginCmd(t *testing.T) {
 		"IMAGE_REPO_PASS=222",
 		"GCLOUD_KEY_JSON=333",
 		"AWS_SECRET_ACCESS_KEY=444",
-		"AKS_TENANT_ID=555",
-		"AKS_SP_APP_ID=666",
-		"AKS_SP_PASSWORD=777",
+		"AWS_REGION=555",
+		"AKS_TENANT_ID=666",
+		"AKS_SP_APP_ID=777",
+		"AKS_SP_PASSWORD=888",
 	}
 	testString = `IMAGE_REPO_HOST: foo.bar
 IMAGE_REPO_TLS: true
@@ -38,9 +39,10 @@ IMAGE_REPO_USER: 111
 IMAGE_REPO_PASS: 222
 GCLOUD_KEY_JSON: 333
 AWS_SECRET_ACCESS_KEY: 444
-AKS_TENANT_ID: 555
-AKS_SP_APP_ID: 666
-AKS_SP_PASSWORD: 777
+AWS_REGION: 555
+AKS_TENANT_ID: 666
+AKS_SP_APP_ID: 777
+AKS_SP_PASSWORD: 888
 Command (not executed): echo "222" | docker login --username "111" --password-stdin https://foo.bar`
 
 	CliExecTest(t, command, environment, testString, false)
@@ -64,9 +66,10 @@ Command (not executed): echo "222" | docker login --username "111" --password-st
 			--image-repo-pass 222 \
 			--gcp-key-json 333 \
 			--aws-secret-access-key 444 \
-			--aks-tenant-id 555 \
-			--aks-sp-app-id 666 \
-			--aks-sp-password 777 \
+			--aws-region 555 \
+			--aks-tenant-id 666 \
+			--aks-sp-app-id 777 \
+			--aks-sp-password 888 \
 			--debug`
 
 	environment = []string{}
@@ -76,9 +79,10 @@ IMAGE_REPO_USER: 111
 IMAGE_REPO_PASS: 222
 GCLOUD_KEY_JSON: 333
 AWS_SECRET_ACCESS_KEY: 444
-AKS_TENANT_ID: 555
-AKS_SP_APP_ID: 666
-AKS_SP_PASSWORD: 777
+AWS_REGION: 555
+AKS_TENANT_ID: 666
+AKS_SP_APP_ID: 777
+AKS_SP_PASSWORD: 888
 Command (not executed): echo "222" | docker login --username "111" --password-stdin https://foo.bar`
 	CliExecTest(t, command, environment, testString, false)
 
