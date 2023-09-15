@@ -132,8 +132,10 @@ Available flags and environment variables:
 				if err != nil {
 					log.Fatal("Error:", err)
 				}
+				//Remove newline
+				awsAccountId = []byte(strings.TrimSuffix(string(awsAccountId), "\n"))
 				// ECR login
-				command = fmt.Sprintf("aws ecr get-login-password --region %q | docker login --username AWS --password-stdin %s.dkr.ecr.%q.amazonaws.com", awsRegion, awsAccountId, awsRegion)
+				command = fmt.Sprintf("aws ecr get-login-password --region %s | docker login --username AWS --password-stdin %s.dkr.ecr.%s.amazonaws.com", awsRegion, awsAccountId, awsRegion)
 				// TODO: use aws cli v2
 				// command = fmt.Sprintf("echo %q | docker login --username AWS --password-stdin %s", awsSecretAccessKey, imageRepoHost)
 
