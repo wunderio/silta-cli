@@ -128,7 +128,7 @@ Available flags and environment variables:
 
 			} else if awsSecretAccessKey != "" {
 				//Get AWS Account ID
-				awsAccountId, err := exec.Command("aws sts get-caller-identity --query \"Account\" --output text --no-cli-pager").Output()
+				awsAccountId, err := exec.Command("bash", "-c", "aws sts get-caller-identity --query \"Account\" --output text --no-cli-pager").CombinedOutput()
 				if err != nil {
 					log.Fatal("Error:", err)
 				}
