@@ -32,6 +32,7 @@ Available flags and environment variables:
 
   * Amazon Web Services:
     - "--aws-secret-access-key" flag or "AWS_SECRET_ACCESS_KEY" environment variable: Amazon Web Services IAM account key (string value)
+		- "--aws-region" flag or "AWS_REGION" environment variable: Region of the container repository
 
   * Azure Services:
     - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable: Azure Services tenant id
@@ -47,6 +48,7 @@ Available flags and environment variables:
 		imageRepoPass, _ := cmd.Flags().GetString("image-repo-pass")
 		gcpKeyJson, _ := cmd.Flags().GetString("gcp-key-json")
 		awsSecretAccessKey, _ := cmd.Flags().GetString("aws-secret-access-key")
+		awsRegion, _ := cmd.Flags().GetString("aws-region")
 		aksTenantID, _ := cmd.Flags().GetString("aks-tenant-id")
 		aksSPAppID, _ := cmd.Flags().GetString("aks-sp-app-id")
 		aksSPPass, _ := cmd.Flags().GetString("aks-sp-password")
@@ -61,6 +63,9 @@ Available flags and environment variables:
 			}
 			if len(awsSecretAccessKey) == 0 {
 				awsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+			}
+			if len(awsRegion) == 0 {
+				awsRegion = os.Getenv("AWS_REGION")
 			}
 			if len(imageRepoHost) == 0 {
 				imageRepoHost = os.Getenv("IMAGE_REPO_HOST")
@@ -93,6 +98,7 @@ Available flags and environment variables:
 			fmt.Println("IMAGE_REPO_PASS:", imageRepoPass)
 			fmt.Println("GCLOUD_KEY_JSON:", gcpKeyJson)
 			fmt.Println("AWS_SECRET_ACCESS_KEY:", awsSecretAccessKey)
+			fmt.Println("AWS_REGION:", awsRegion)
 			fmt.Println("AKS_TENANT_ID:", aksTenantID)
 			fmt.Println("AKS_SP_APP_ID:", aksSPAppID)
 			fmt.Println("AKS_SP_PASSWORD:", aksSPPass)
@@ -121,8 +127,15 @@ Available flags and environment variables:
 				command = fmt.Sprintf("echo %q | docker login --username %q --password-stdin %s", gcpKeyJson, "_json_key", imageRepoHost)
 
 			} else if awsSecretAccessKey != "" {
+				//Get AWS Account ID
+				awsAccountId, err := exec.Command("bash", "-c", "aws sts get-caller-identity --query \"Account\" --output text --no-cli-pager").CombinedOutput()
+				if err != nil {
+					log.Fatal("Error:", err)
+				}
+				//Remove newline
+				awsAccountId = []byte(strings.TrimSuffix(string(awsAccountId), "\n"))
 				// ECR login
-				command = fmt.Sprintf("aws ecr get-login --no-include-email | bash")
+				command = fmt.Sprintf("aws ecr get-login-password --region %s | docker login --username AWS --password-stdin %s.dkr.ecr.%s.amazonaws.com", awsRegion, awsAccountId, awsRegion)
 				// TODO: use aws cli v2
 				// command = fmt.Sprintf("echo %q | docker login --username AWS --password-stdin %s", awsSecretAccessKey, imageRepoHost)
 
@@ -155,6 +168,7 @@ func init() {
 	ciImageLoginCmd.Flags().String("image-repo-pass", "", "(Docker) container image repository password")
 	ciImageLoginCmd.Flags().String("gcp-key-json", "", "Google Cloud service account key (plaintext, json)")
 	ciImageLoginCmd.Flags().String("aws-secret-access-key", "", "Amazon Web Services IAM account key (string value)")
+	ciImageLoginCmd.Flags().String("aws-region", "", "Elastic Container Registry region (string value)")
 	ciImageLoginCmd.Flags().String("aks-tenant-id", "", "Azure Services tenant id")
 	ciImageLoginCmd.Flags().String("aks-sp-app-id", "", "Azure Services servicePrincipal app id")
 	ciImageLoginCmd.Flags().String("aks-sp-password", "", "Azure Services servicePrincipal password")
