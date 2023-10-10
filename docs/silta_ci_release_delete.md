@@ -9,7 +9,7 @@ silta ci release delete [flags]
 ### Options
 
 ```
-      --delete-pvcs           Delete PVCs
+      --delete-pvcs           Delete PVCs (default: false)
   -h, --help                  help for delete
       --namespace string      Project name (namespace, i.e. "drupal-project")
       --release-name string   Release name

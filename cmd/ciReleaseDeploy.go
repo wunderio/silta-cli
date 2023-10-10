@@ -15,6 +15,12 @@ import (
 var ciReleaseDeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy release",
+	Long: `Release deployment
+	
+	* Chart allows prepending extra configuration (to helm --values line) via 
+	"SILTA_<chart_name>_CONFIG_VALUES" environment variable. It has to be a 
+	base64 encoded string of a silta configuration yaml file.
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		releaseName, _ := cmd.Flags().GetString("release-name")

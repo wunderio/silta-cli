@@ -2,6 +2,15 @@
 
 Deploy release
 
+### Synopsis
+
+Release deployment
+	
+	* Chart allows prepending extra configuration (to helm --values line) via 
+	"SILTA_<chart_name>_CONFIG_VALUES" environment variable. It has to be a 
+	base64 encoded string of a silta configuration yaml file.
+	
+
 ```
 silta ci release deploy [flags]
 ```

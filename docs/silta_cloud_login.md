@@ -52,6 +52,7 @@ silta cloud login [flags]
       --gcp-compute-region string      GCP compute region
       --gcp-compute-zone string        GCP compute zone
       --gcp-key-json string            Google Cloud service account key (plaintext, json)
+      --gcp-key-path string            Location of Google Cloud service account key file
       --gcp-project-name string        GCP project name (project id)
   -h, --help                           help for login
       --kubeconfig string              Kubernetes config content (plaintext, base64 encoded)

@@ -9,9 +9,9 @@ silta secrets encrypt [flags]
 ### Options
 
 ```
-      --file string             File location
+      --file string             Decrypted file location. Can have multiple, comma separated paths (i.e. 'silta/secrets.enc,silta/secrets2.enc')
   -h, --help                    help for encrypt
-      --output-file string      Output file location (optional, rewrites original when undefined)
+      --output-file string      Output file location (optional, rewrites original when undefined, don't use with multiple input files)
       --secret-key string       Secret key (falls back to SECRET_KEY environment variable. Also see: --secret-key-env)
       --secret-key-env string   Environment variable holding symmetrical decryption key.
 ```

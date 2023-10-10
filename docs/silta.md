@@ -18,5 +18,6 @@ Silta CLI
 * [silta completion](silta_completion.md)	 - Generate the autocompletion script for the specified shell
 * [silta doc](silta_doc.md)	 - Generate menu documentation markdown
 * [silta secrets](silta_secrets.md)	 - Manage encrypted secret files
+* [silta tools](silta_tools.md)	 - CI tooling
 * [silta version](silta_version.md)	 - Silta CLI version
 
