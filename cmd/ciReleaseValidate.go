@@ -50,20 +50,9 @@ var ciReleaseValidateCmd = &cobra.Command{
 			}
 		}
 
-		// If chart config override is not empty, decode base64 value and write to temporary file
-		chartConfigOverride := os.Getenv("SILTA_" + strings.ToUpper(common.GetChartName(chartName)) + "_CONFIG_VALUES")
-
-		if len(chartConfigOverride) > 0 {
-			chartOverrideFile := common.CreateChartConfigurationFile(chartConfigOverride)
-			defer os.Remove(chartOverrideFile)
-
-			// Prepend override configuration to siltaConfig
-			if len(siltaConfig) > 0 {
-				siltaConfig = chartOverrideFile + "," + siltaConfig
-			} else {
-				siltaConfig = chartOverrideFile
-			}
-		}
+		// Uses PrependChartConfigOverrides from "SILTA_<CHART_NAME>_CONFIG_VALUES"
+		// environment variable and prepends it to configuration
+		siltaConfig = common.PrependChartConfigOverrides(chartName, siltaConfig)
 
 		if len(chartRepository) == 0 {
 			chartRepository = "https://storage.googleapis.com/charts.wdr.io"

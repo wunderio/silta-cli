@@ -170,3 +170,24 @@ func CreateChartConfigurationFile(configuration string) string {
 
 	return chartConfigOverrideFile.Name()
 }
+
+// Uses PrependChartConfigOverrides from "SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES"
+// environment variable and prepends it to configuration
+func PrependChartConfigOverrides(chartName string, configuration string) string {
+	// If chart config override is not empty, decode base64 value and write to temporary file
+	chartConfigOverride := os.Getenv("SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES")
+
+	if len(chartConfigOverride) > 0 {
+		chartOverrideFile := CreateChartConfigurationFile(chartConfigOverride)
+		defer os.Remove(chartOverrideFile)
+
+		// Prepend override to configuration
+		if len(configuration) > 0 {
+			configuration = chartOverrideFile + "," + configuration
+		} else {
+			configuration = chartOverrideFile
+		}
+	}
+
+	return configuration
+}
