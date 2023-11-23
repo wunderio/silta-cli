@@ -52,7 +52,11 @@ var ciReleaseValidateCmd = &cobra.Command{
 
 		// Uses PrependChartConfigOverrides from "SILTA_<CHART_NAME>_CONFIG_VALUES"
 		// environment variable and prepends it to configuration
-		siltaConfig = common.PrependChartConfigOverrides(chartName, siltaConfig)
+		chartOverrideFile := common.CreateChartConfigurationFile(chartName)
+		if chartOverrideFile != "" {
+			defer os.Remove(chartOverrideFile)
+			siltaConfig = common.PrependChartConfigOverrides(chartOverrideFile, siltaConfig)
+		}
 
 		if len(chartRepository) == 0 {
 			chartRepository = "https://storage.googleapis.com/charts.wdr.io"

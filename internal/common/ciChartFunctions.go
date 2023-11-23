@@ -152,42 +152,36 @@ func GetChartName(chartName string) string {
 }
 
 // Creates a configuration file that can be used for helm release
-func CreateChartConfigurationFile(configuration string) string {
-	rawConfig, err := base64.StdEncoding.DecodeString(configuration)
+func CreateChartConfigurationFile(chartName string) string {
+
+	chartConfigOverride := os.Getenv("SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES")
+	if chartConfigOverride == "" {
+		return ""
+	}
+	rawConfig, err := base64.StdEncoding.DecodeString(chartConfigOverride)
 	if err != nil {
 		log.Fatal("base64 decoding failed for silta configuration overrides file")
 	}
-
 	// Write configuration to temporary file
 	chartConfigOverrideFile, err := os.CreateTemp("", "silta-config-*")
 	if err != nil {
 		log.Fatal("failed to create temporary values file")
 	}
-
 	if _, err := chartConfigOverrideFile.Write(rawConfig); err != nil {
 		log.Fatal("failed to write to temporary values file")
 	}
-
 	return chartConfigOverrideFile.Name()
 }
 
 // Uses PrependChartConfigOverrides from "SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES"
 // environment variable and prepends it to configuration
-func PrependChartConfigOverrides(chartName string, configuration string) string {
-	// If chart config override is not empty, decode base64 value and write to temporary file
-	chartConfigOverride := os.Getenv("SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES")
+func PrependChartConfigOverrides(chartOverrideFile string, configuration string) string {
 
-	if len(chartConfigOverride) > 0 {
-		chartOverrideFile := CreateChartConfigurationFile(chartConfigOverride)
-		defer os.Remove(chartOverrideFile)
-
-		// Prepend override to configuration
-		if len(configuration) > 0 {
-			configuration = chartOverrideFile + "," + configuration
-		} else {
-			configuration = chartOverrideFile
-		}
+	if chartOverrideFile == "" {
+		return configuration
 	}
-
-	return configuration
+	if configuration == "" {
+		return chartOverrideFile
+	}
+	return chartOverrideFile + "," + configuration
 }
