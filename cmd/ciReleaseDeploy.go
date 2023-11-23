@@ -48,7 +48,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 		deploymentTimeout, _ := cmd.Flags().GetString("deployment-timeout")
 
 		// Use environment variables as fallback
-		if useEnv == true {
+		if useEnv {
 			if len(dbRootPass) == 0 {
 				dbRootPass = os.Getenv("DB_ROOT_PASS")
 			}
@@ -156,7 +156,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			`, namespace)
 		pipedExec(command, debug)
 
-		if debug == false {
+		if !debug {
 			// Add helm repositories
 			command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
 			exec.Command("bash", "-c", command).Run()
@@ -173,7 +173,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			}
 
 			_, errDir := os.Stat(common.ExtendedFolder + "/simple")
-			if os.IsNotExist(errDir) == false {
+			if !os.IsNotExist(errDir) {
 				chartName = common.ExtendedFolder + "/simple"
 			}
 
@@ -258,7 +258,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			_, errDir := os.Stat(common.ExtendedFolder + "/frontend")
-			if os.IsNotExist(errDir) == false {
+			if !os.IsNotExist(errDir) {
 				chartName = common.ExtendedFolder + "/frontend"
 			}
 
