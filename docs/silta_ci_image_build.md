@@ -18,6 +18,7 @@ silta ci image build [flags]
       --image-repo-project string   (Docker) image repository project (project name, i.e. "silta")
       --image-reuse                 Do not rebuild image if identical image:tag exists in remote (default true)
       --image-tag string            Docker image tag (optional, check '--image-reuse' flag)
+      --image-tag-prefix string     Prefix for Docker image tag (optional)
       --namespace string            Project name (namespace, i.e. "drupal-project")
 ```
 

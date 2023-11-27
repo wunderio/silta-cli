@@ -1,9 +1,11 @@
 package common
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -134,4 +136,52 @@ func GetChartNamesFromDependencies(dependencies []dependency) []string {
 	}
 
 	return names
+}
+
+// GetChartName reduces chart name to a simple name
+func GetChartName(chartName string) string {
+	// Charts can be stored stored locally, can't use remote repository name as chart name
+	if chartName == "simple" || strings.HasSuffix(chartName, "/simple") {
+		return "simple"
+	} else if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
+		return "frontend"
+	} else if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
+		return "drupal"
+	}
+	return ""
+}
+
+// Creates a configuration file that can be used for helm release
+func CreateChartConfigurationFile(chartName string) string {
+
+	chartConfigOverride := os.Getenv("SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES")
+	if chartConfigOverride == "" {
+		return ""
+	}
+	rawConfig, err := base64.StdEncoding.DecodeString(chartConfigOverride)
+	if err != nil {
+		log.Fatal("base64 decoding failed for silta configuration overrides file")
+	}
+	// Write configuration to temporary file
+	chartConfigOverrideFile, err := os.CreateTemp("", "silta-config-*")
+	if err != nil {
+		log.Fatal("failed to create temporary values file")
+	}
+	if _, err := chartConfigOverrideFile.Write(rawConfig); err != nil {
+		log.Fatal("failed to write to temporary values file")
+	}
+	return chartConfigOverrideFile.Name()
+}
+
+// Uses PrependChartConfigOverrides from "SILTA_" + strings.ToUpper(GetChartName(chartName)) + "_CONFIG_VALUES"
+// environment variable and prepends it to configuration
+func PrependChartConfigOverrides(chartOverrideFile string, configuration string) string {
+
+	if chartOverrideFile == "" {
+		return configuration
+	}
+	if configuration == "" {
+		return chartOverrideFile
+	}
+	return chartOverrideFile + "," + configuration
 }

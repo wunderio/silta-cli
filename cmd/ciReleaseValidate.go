@@ -32,7 +32,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 		clusterType, _ := cmd.Flags().GetString("cluster-type")
 
 		// Use environment variables as fallback
-		if useEnv == true {
+		if useEnv {
 			if len(siltaEnvironmentName) == 0 {
 				siltaEnvironmentName = os.Getenv("SILTA_ENVIRONMENT_NAME")
 			}
@@ -48,6 +48,14 @@ var ciReleaseValidateCmd = &cobra.Command{
 			if len(clusterType) == 0 {
 				clusterType = os.Getenv("CLUSTER_TYPE")
 			}
+		}
+
+		// Uses PrependChartConfigOverrides from "SILTA_<CHART_NAME>_CONFIG_VALUES"
+		// environment variable and prepends it to configuration
+		chartOverrideFile := common.CreateChartConfigurationFile(chartName)
+		if chartOverrideFile != "" {
+			defer os.Remove(chartOverrideFile)
+			siltaConfig = common.PrependChartConfigOverrides(chartOverrideFile, siltaConfig)
 		}
 
 		if len(chartRepository) == 0 {

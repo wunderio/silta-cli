@@ -15,6 +15,12 @@ import (
 var ciReleaseDeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy release",
+	Long: `Release deployment
+	
+	* Chart allows prepending extra configuration (to helm --values line) via 
+	"SILTA_<chart_name>_CONFIG_VALUES" environment variable. It has to be a 
+	base64 encoded string of a silta configuration yaml file.
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		releaseName, _ := cmd.Flags().GetString("release-name")
@@ -42,7 +48,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 		deploymentTimeout, _ := cmd.Flags().GetString("deployment-timeout")
 
 		// Use environment variables as fallback
-		if useEnv == true {
+		if useEnv {
 			if len(dbRootPass) == 0 {
 				dbRootPass = os.Getenv("DB_ROOT_PASS")
 			}
@@ -76,6 +82,14 @@ var ciReleaseDeployCmd = &cobra.Command{
 			if len(clusterDomain) == 0 {
 				clusterDomain = os.Getenv("CLUSTER_DOMAIN")
 			}
+		}
+
+		// Uses PrependChartConfigOverrides from "SILTA_<CHART_NAME>_CONFIG_VALUES"
+		// environment variable and prepends it to configuration
+		chartOverrideFile := common.CreateChartConfigurationFile(chartName)
+		if chartOverrideFile != "" {
+			defer os.Remove(chartOverrideFile)
+			siltaConfig = common.PrependChartConfigOverrides(chartOverrideFile, siltaConfig)
 		}
 
 		if len(deploymentTimeout) == 0 {
@@ -142,7 +156,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			`, namespace)
 		pipedExec(command, debug)
 
-		if debug == false {
+		if !debug {
 			// Add helm repositories
 			command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
 			exec.Command("bash", "-c", command).Run()
@@ -159,7 +173,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			}
 
 			_, errDir := os.Stat(common.ExtendedFolder + "/simple")
-			if os.IsNotExist(errDir) == false {
+			if !os.IsNotExist(errDir) {
 				chartName = common.ExtendedFolder + "/simple"
 			}
 
@@ -244,7 +258,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			_, errDir := os.Stat(common.ExtendedFolder + "/frontend")
-			if os.IsNotExist(errDir) == false {
+			if !os.IsNotExist(errDir) {
 				chartName = common.ExtendedFolder + "/frontend"
 			}
 

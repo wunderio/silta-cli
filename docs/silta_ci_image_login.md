@@ -22,6 +22,7 @@ Available flags and environment variables:
 
   * Amazon Web Services:
     - "--aws-secret-access-key" flag or "AWS_SECRET_ACCESS_KEY" environment variable: Amazon Web Services IAM account key (string value)
+		- "--aws-region" flag or "AWS_REGION" environment variable: Region of the container repository
 
   * Azure Services:
     - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable: Azure Services tenant id
@@ -42,6 +43,7 @@ silta ci image login [flags]
       --image-repo-pass string         (Docker) container image repository password
       --gcp-key-json string            Google Cloud service account key (plaintext, json)
       --aws-secret-access-key string   Amazon Web Services IAM account key (string value)
+      --aws-region string              Elastic Container Registry region (string value)
       --aks-tenant-id string           Azure Services tenant id
       --aks-sp-app-id string           Azure Services servicePrincipal app id
       --aks-sp-password string         Azure Services servicePrincipal password
