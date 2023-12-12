@@ -7,7 +7,6 @@ import (
 
 	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/spf13/cobra"
-	errs "k8s.io/apimachinery/pkg/api/errors" // k8s errors and handling
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // gcp auth provider
@@ -67,13 +66,23 @@ var ciReleaseDeleteCmd = &cobra.Command{
 			log.Fatalf("Error removing a release:%s", uninstallErr)
 		}
 
-		propagationPolicy := v1.DeletePropagationBackground
-		deleteErr := clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), releaseName+"-post-release", v1.DeleteOptions{PropagationPolicy: &propagationPolicy})
-		if deleteErr != nil {
-			if errs.IsNotFound(deleteErr) {
-				//Resource doesnt exist, lets skip printing a message
-			} else {
-				log.Println("Cannot delete post-release job: %s", deleteErr)
+		//Delete pre-release jobs
+		selectorLabels := []string{
+			"release",
+			"app.kubernetes.io/instance",
+		}
+
+		for _, l := range selectorLabels {
+			selector := l + "=" + releaseName
+			list, err := clientset.BatchV1().Jobs(namespace).List(context.TODO(), v1.ListOptions{
+				LabelSelector: selector,
+			})
+			if err != nil {
+				log.Fatalf("Error getting the list of jobs: %s", err)
+			}
+			for _, v := range list.Items {
+				log.Printf("Deleting job: %s", v.Name)
+				clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
 			}
 		}
 
