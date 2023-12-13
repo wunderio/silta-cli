@@ -82,7 +82,8 @@ var ciReleaseDeleteCmd = &cobra.Command{
 			}
 			for _, v := range list.Items {
 				log.Printf("Deleting job: %s", v.Name)
-				clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+				propagationPolicy := v1.DeletePropagationBackground
+				clientset.BatchV1().Jobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{PropagationPolicy: &propagationPolicy})
 			}
 		}
 
