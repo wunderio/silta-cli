@@ -18,6 +18,12 @@ curl -sL https://github.com/wunderio/silta-cli/releases/download/0.1.0/silta-0.1
 curl -sL https://github.com/wunderio/silta-cli/releases/download/master/silta-master-linux-amd64.tar.gz | tar xz -C ~/.local/bin
 ```
 
+### macOS
+Installing should work using brew
+```
+brew install wunderio/tap/silta-cli
+```
+
 ## Usage
 
 Run cli commands
