@@ -29,4 +29,5 @@ silta ci release [flags]
 * [silta ci release info](silta_ci_release_info.md)	 - Print release information
 * [silta ci release name](silta_ci_release_name.md)	 - Return release name
 * [silta ci release validate](silta_ci_release_validate.md)	 - Validate release
+* [silta ci release wakeup](silta_ci_release_wakeup.md)	 - Wake up a downscaled release
 
