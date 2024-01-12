@@ -336,6 +336,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				${EXTRA_DB_USER_PASS} \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--wait \
 				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!
 
 				# TODO: Rewrite this part
@@ -567,6 +568,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--wait \
 				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!
 
 				# TODO: Rewrite this part
