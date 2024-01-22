@@ -222,6 +222,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--wait \
 				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!`
 	CliExecTest(t, command, environment, testString, false)
 
@@ -331,6 +332,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				--namespace="${NAMESPACE}" \
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS} \
+				--wait \
 				--timeout "${DEPLOYMENT_TIMEOUT}" &> helm-output.log & pid=$!`
 	CliExecTest(t, command, environment, testString, false)
 
