@@ -341,7 +341,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# TODO: Rewrite this part
 
-				echo "Waiting for containers to start"
+				echo "Waiting for containers to start and be ready"
 
 				TIME_WAITING=0
 				LOGS_SHOWN=false
@@ -573,7 +573,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# TODO: Rewrite this part
 				
-				echo "Waiting for containers to start"
+				echo "Waiting for containers to start and be ready"
 
 				TIME_WAITING=0
 				LOGS_SHOWN=false
