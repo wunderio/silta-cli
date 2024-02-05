@@ -100,7 +100,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 		deploymentTimeoutSeconds := 900
 		deploymentTimeoutDuration, err := time.ParseDuration(deploymentTimeout)
 		if err != nil {
-		    deploymentTimeoutSeconds = 900
+		    log.Println("Invalid deployment timeout duration, using default 15m.")
 		} else {
 		    deploymentTimeoutSeconds = int(deploymentTimeoutDuration.Seconds())
 		}
