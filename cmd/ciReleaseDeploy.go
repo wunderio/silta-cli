@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
@@ -95,6 +96,15 @@ var ciReleaseDeployCmd = &cobra.Command{
 		if len(deploymentTimeout) == 0 {
 			deploymentTimeout = "15m"
 		}
+		// Convert deploymentTimeout to integer of seconds
+		deploymentTimeoutSeconds := 900
+		deploymentTimeoutDuration, err := time.ParseDuration(deploymentTimeout)
+		if err != nil {
+		    log.Println("Invalid deployment timeout duration, using default 15m.")
+		} else {
+		    deploymentTimeoutSeconds = int(deploymentTimeoutDuration.Seconds())
+		}
+
 		if len(chartRepository) == 0 {
 			chartRepository = "https://storage.googleapis.com/charts.wdr.io"
 		}
@@ -285,6 +295,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			SILTA_CONFIG='%s'
 			EXTRA_HELM_FLAGS='%s'
 			DEPLOYMENT_TIMEOUT='%s'
+			DEPLOYMENT_TIMEOUT_SECONDS='%d'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -364,7 +375,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						break
 					fi
 
-					if [ $TIME_WAITING -gt 300 ]; then
+					if [ $TIME_WAITING -gt ${DEPLOYMENT_TIMEOUT_SECONDS} ]; then
 						echo "Timeout waiting for resources."
 						show_failing_pods
 						exit 1
@@ -390,7 +401,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride,
 				siltaConfig, helmFlags,
-				deploymentTimeout)
+				deploymentTimeout, deploymentTimeoutSeconds)
 			pipedExec(command, debug)
 
 		} else if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
@@ -513,6 +524,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			SILTA_CONFIG='%s'
 			EXTRA_HELM_FLAGS='%s'
 			DEPLOYMENT_TIMEOUT='%s'
+			DEPLOYMENT_TIMEOUT_SECONDS='%d'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -596,7 +608,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						break
 					fi
 
-					if [ $TIME_WAITING -gt 300 ]; then
+					if [ $TIME_WAITING -gt ${DEPLOYMENT_TIMEOUT_SECONDS} ]; then
 						echo "Timeout waiting for resources."
 						show_failing_pods
 						exit 1
@@ -621,7 +633,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride, referenceDataOverride, namespace,
-				siltaConfig, helmFlags, deploymentTimeout)
+				siltaConfig, helmFlags, deploymentTimeout, deploymentTimeoutSeconds)
 			pipedExec(command, debug)
 
 		} else {

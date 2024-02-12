@@ -167,6 +167,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			SILTA_CONFIG=''
 			EXTRA_HELM_FLAGS=''
 			DEPLOYMENT_TIMEOUT='15m'
+			DEPLOYMENT_TIMEOUT_SECONDS='900'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -277,6 +278,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='21'
 			DEPLOYMENT_TIMEOUT='22'
+			DEPLOYMENT_TIMEOUT_SECONDS='900'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
