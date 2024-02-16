@@ -125,7 +125,7 @@ func init() {
 
 	ciReleaseDeleteCmd.Flags().String("release-name", "", "Release name")
 	ciReleaseDeleteCmd.Flags().String("namespace", "", "Project name (namespace, i.e. \"drupal-project\")")
-	ciReleaseDeleteCmd.Flags().Bool("delete-pvcs", false, "Delete PVCs (default: false)")
+	ciReleaseDeleteCmd.Flags().Bool("delete-pvcs", true, "Delete PVCs (default: true)")
 
 	ciReleaseDeleteCmd.MarkFlagRequired("release-name")
 	ciReleaseDeleteCmd.MarkFlagRequired("namespace")
