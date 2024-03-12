@@ -105,10 +105,6 @@ var ciReleaseDeployCmd = &cobra.Command{
 		    deploymentTimeoutSeconds = int(deploymentTimeoutDuration.Seconds())
 		}
 
-		if len(chartRepository) == 0 {
-			chartRepository = "https://storage.googleapis.com/charts.wdr.io"
-		}
-
 		// Chart value overrides
 
 		// Override Database credentials if specified
@@ -664,7 +660,7 @@ func init() {
 	ciReleaseDeployCmd.Flags().String("gitauth-password", "", "Gitauth server password")
 	ciReleaseDeployCmd.Flags().String("cluster-domain", "", "Base domain for cluster urls (i.e. dev.example.com)")
 	ciReleaseDeployCmd.Flags().String("chart-name", "", "Chart name")
-	ciReleaseDeployCmd.Flags().String("chart-repository", "", "Chart repository")
+	ciReleaseDeployCmd.Flags().String("chart-repository", "https://storage.googleapis.com/charts.wdr.io", "Chart repository")
 	ciReleaseDeployCmd.Flags().String("silta-config", "", "Silta release helm chart values")
 	ciReleaseDeployCmd.Flags().String("helm-flags", "", "Extra flags for helm release")
 	ciReleaseDeployCmd.Flags().String("deployment-timeout", "", "Helm deployment timeout")
