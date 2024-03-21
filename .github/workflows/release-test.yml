@@ -1,0 +1,63 @@
+name: Workflow test
+
+on:
+  push:
+    branches: [ feature/* ]
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  circleci-k8s-test-build:
+    name: Test released CLI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [ 
+          {org: "wunderio", repo: "drupal-project-k8s", branch: "master"},
+          {org: "wunderio", repo: "frontend-project-k8s", branch: "master"},
+          {org: "wunderio", repo: "simple-project-k8s", branch: "master"}
+        ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate released cli with ${{ matrix.project.REPO_NAME }}
+        run: |
+          REPO_NAME="${{ matrix.project.repo }}"
+          ORG_NAME="${{ matrix.project.org }}"
+          BRANCH_NAME="${{ matrix.project.branch }}"
+          CIRCLECI_DEV_API_TOKEN_B64=$(echo -n "${{ secrets.CIRCLECI_DEV_API_TOKEN }}:" | base64)
+
+          if [ -z "${{ secrets.CIRCLECI_DEV_API_TOKEN }}" ]; then
+            echo "Repository secrets is missing CIRCLECI_DEV_API_TOKEN variable."
+            exit 1
+          fi
+
+          echo "Running ${ORG_NAME}/${REPO_NAME}/${BRANCH_NAME} build on CircleCI"
+          echo "Project link: https://app.circleci.com/pipelines/github/${ORG_NAME}/${REPO_NAME}?branch=${BRANCH_NAME}"
+
+          # Trigger a new pipeline
+          PIPELINE_ID=$(curl --request POST \
+            --url "https://circleci.com/api/v2/project/gh/wunderio/${REPO_NAME}/pipeline" \
+            --header "content-type: application/json" \
+            --data "{\"branch\":\"${BRANCH_NAME}\"}" \
+            --header "authorization: Basic ${CIRCLECI_DEV_API_TOKEN_B64}" --silent | jq -r '.id')
+
+          echo "Pipeline ID: ${PIPELINE_ID}"
+
+          sleep 10
+
+          # Wait for pipeline to be complete
+          while true; do
+            PIPELINE_STATUS=$(curl --request GET \
+              --url "https://circleci.com/api/v2/pipeline/${PIPELINE_ID}/workflow" \
+              --header "authorization: Basic ${CIRCLECI_DEV_API_TOKEN_B64}" --silent | jq -r '.items[0].status')
+            if [ "${PIPELINE_STATUS}" = "success" ]; then
+              echo "Pipeline completed successfully"
+              break
+            elif [ "${PIPELINE_STATUS}" != "created" ] && [ "${PIPELINE_STATUS}" != "running" ]; then
+              echo "Pipeline status: ${PIPELINE_STATUS}, failing the test"
+              exit 1
+            fi
+            echo "current status: ${PIPELINE_STATUS}"
+            sleep 10
+          done
