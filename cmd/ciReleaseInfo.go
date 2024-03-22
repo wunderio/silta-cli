@@ -72,7 +72,7 @@ but namespace is normalized lowercase version of it.
 					curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" -X POST -d '{"body": "<details><summary>Release notes for '${RELEASE_NAME}'</summary>'"${FORMATTED_NOTES//$'\n'/'\n'}"'</details>"}' ${GITHUB_API_URL}
 				fi
 				`, namespace, releaseName, githubToken, circlePrNumber, circlePullRequest, circleProjectUsername, circleProjectReponame)
-		pipedExec(command, debug)
+		pipedExec(command, "", "ERROR: ", debug)
 
 		command = fmt.Sprintf(`
 				NAMESPACE='%s'

@@ -160,7 +160,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				fi
 
 			`, namespace)
-		pipedExec(command, debug)
+		pipedExec(command, "", "ERROR: ", debug)
 
 		if !debug {
 			// Add helm repositories
@@ -257,7 +257,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				siltaEnvironmentName, branchname, nginxImageUrl,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				namespace, siltaConfig, helmFlags, deploymentTimeout)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 
 		} else if chartName == "frontend" || strings.HasSuffix(chartName, "/frontend") {
 
@@ -398,7 +398,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				dbRootPassOverride, dbUserPassOverride,
 				siltaConfig, helmFlags,
 				deploymentTimeout, deploymentTimeoutSeconds)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 
 		} else if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
@@ -441,7 +441,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						fi
 					fi
 				`, namespace, releaseName)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 
 			// Clean up failed Helm releases
 			// TODO: Rewrite
@@ -477,7 +477,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						kubectl delete secret -n "$NAMESPACE" "$secret_to_delete"
 					fi
 				`, namespace, releaseName)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 
 			// Chart value overrides
 
@@ -630,7 +630,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				dbRootPassOverride, dbUserPassOverride, referenceDataOverride, namespace,
 				siltaConfig, helmFlags, deploymentTimeout, deploymentTimeoutSeconds)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 
 		} else {
 			fmt.Printf("Chart name %s does not match preselected names (drupal, frontend, simple), helm release step was skipped\n", chartName)

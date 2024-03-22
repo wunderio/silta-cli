@@ -204,7 +204,7 @@ var ciImageBuildCmd = &cobra.Command{
 			extraImageTagString = fmt.Sprintf("--tag '%s:%s'", imageUrl, extraImageTag)
 		}
 		command := fmt.Sprintf("docker build --tag '%s:%s' %s -f '%s' %s", imageUrl, imageTag, extraImageTagString, dockerfile, buildPath)
-		pipedExec(command, debug)
+		pipedExec(command, "", "", debug)
 
 		// Create AWS/ECR repository (ECR requires a dedicated repository per project)
 		if strings.HasSuffix(imageRepoHost, ".amazonaws.com") {
@@ -223,12 +223,12 @@ var ciImageBuildCmd = &cobra.Command{
 
 		// Image push
 		command = fmt.Sprintf("docker push '%s:%s'", imageUrl, imageTag)
-		pipedExec(command, debug)
+		pipedExec(command, "", "ERROR: ", debug)
 
 		// Push extra tags
 		if len(branchName) > 0 {
 			command = fmt.Sprintf("docker push '%s:%s'", imageUrl, extraImageTag)
-			pipedExec(command, debug)
+			pipedExec(command, "", "ERROR: ", debug)
 		}
 	},
 }

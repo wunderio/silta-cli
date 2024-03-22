@@ -109,7 +109,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 			fi
 			`, namespace, releaseName)
 
-		pipedExec(command, debug)
+		pipedExec(command, "", "ERROR: ", debug)
 
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 

@@ -46,7 +46,7 @@ var ciReleaseCleanfailedCmd = &cobra.Command{
 					kubectl delete secret -n "${NAMESPACE}" "${secret_to_delete}"
 				fi
 				`, namespace, releaseName)
-		pipedExec(command, debug)
+		pipedExec(command, "", "ERROR: ", debug)
 	},
 }
 
