@@ -58,10 +58,6 @@ var ciReleaseValidateCmd = &cobra.Command{
 			siltaConfig = common.PrependChartConfigOverrides(chartOverrideFile, siltaConfig)
 		}
 
-		if len(chartRepository) == 0 {
-			chartRepository = "https://storage.googleapis.com/charts.wdr.io"
-		}
-
 		// Chart value overrides
 
 		// Allow pinning a specific chart version
@@ -227,7 +223,7 @@ func init() {
 	ciReleaseValidateCmd.Flags().String("cluster-type", "", "Cluster type (i.e. gke, aws, aks, other)")
 	ciReleaseValidateCmd.Flags().String("chart-version", "", "Deploy a specific chart version")
 	ciReleaseValidateCmd.Flags().String("chart-name", "", "Chart name")
-	ciReleaseValidateCmd.Flags().String("chart-repository", "", "Chart repository")
+	ciReleaseValidateCmd.Flags().String("chart-repository", "https://storage.googleapis.com/charts.wdr.io", "Chart repository")
 	ciReleaseValidateCmd.Flags().String("silta-config", "", "Silta release helm chart values")
 
 	ciReleaseValidateCmd.MarkFlagRequired("release-name")
