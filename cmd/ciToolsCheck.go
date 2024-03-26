@@ -26,7 +26,7 @@ var ciToolsCheckCmd = &cobra.Command{
 				log.Println(bin + " is installed")
 				if cmd != "" {
 					command := fmt.Sprintf("%s %s", bin, cmd)
-					pipedExec(command, debug)
+					pipedExec(command, "", "ERROR: ", debug)
 				}
 			}
 		}

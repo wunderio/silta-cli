@@ -48,7 +48,7 @@ func bufferedExec(command string, debug bool) {
 	}
 }
 
-func pipedExec(command string, debug bool) {
+func pipedExec(command string, stdOutPrefix string, stdErrPrefix string, debug bool) {
 	if debug == true {
 		fmt.Printf("Command (not executed): %s\n", command)
 	} else {
@@ -71,12 +71,12 @@ func pipedExec(command string, debug bool) {
 		errScanner := bufio.NewScanner(cmdErrReader)
 		go func() {
 			for errScanner.Scan() {
-				fmt.Printf("ERROR: %s\n", errScanner.Text())
+				fmt.Printf("%s%s\n", stdErrPrefix, errScanner.Text())
 			}
 		}()
 		go func() {
 			for outScanner.Scan() {
-				fmt.Printf("%s\n", outScanner.Text())
+				fmt.Printf("%s%s\n", stdOutPrefix, outScanner.Text())
 			}
 		}()
 		err = cmd.Start()
