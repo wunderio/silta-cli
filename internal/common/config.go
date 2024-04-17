@@ -5,18 +5,23 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"github.com/spf13/viper"
 )
 
 func ConfigStore() viper.Viper {
 
-	// Configuration subpath based on OS
+	// Default configuration subpath
 	siltaConfigDir := ".config/silta"
-	if os := os.Getenv("OS"); os == "Windows_NT" {
-		siltaConfigDir = ".silta"
+
+	// running on Windows
+	if runtime.GOOS == "windows" {
+		siltaConfigDir = filepath.Join("AppData", "Local", "silta")
 	}
-	if os := os.Getenv("OS"); os == "darwin" {
+
+	// running on MacOS
+	if runtime.GOOS == "darwin" {
 		siltaConfigDir = "Library/Application Support/silta"
 	}
 
