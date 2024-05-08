@@ -65,6 +65,7 @@ var ciImageUrlCmd = &cobra.Command{
 		if len(imageTag) == 0 {
 			command := fmt.Sprintf(`tar \
 				--sort=name %s \
+				--absolute-names \
 				--exclude='vendor/composer' \
 				--exclude='vendor/autoload.php' \
 				--mtime='2000-01-01 00:00Z' \
