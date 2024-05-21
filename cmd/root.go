@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/spf13/cobra"
+	"github.com/wunderio/silta-cli/internal/common"
 )
 
 var (
@@ -34,10 +35,26 @@ func init() {
 	// Persistent flags
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Print variables, do not execute external commands, rather print them")
 	rootCmd.PersistentFlags().BoolVar(&useEnv, "use-env", true, "Use environment variables for value assignment")
+
+	// Load configuration
+	configStore := common.ConfigStore()
+
+	// Set proxy if it's set in the configuration
+	proxy := configStore.Get("proxy")
+	if proxy != nil {
+		proxy := proxy.(string)
+
+		for _, key := range []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"} {
+			// Set proxy variable unless it's already set in the environment
+			if os.Getenv(key) == "" {
+				os.Setenv(key, proxy)
+			}
+		}
+	}
 }
 
 func bufferedExec(command string, debug bool) {
-	if debug == true {
+	if debug {
 		fmt.Sprintf("Command (not executed): %s\n", command)
 	} else {
 		out, err := exec.Command("bash", "-c", command).CombinedOutput()
@@ -49,7 +66,7 @@ func bufferedExec(command string, debug bool) {
 }
 
 func pipedExec(command string, stdOutPrefix string, stdErrPrefix string, debug bool) {
-	if debug == true {
+	if debug {
 		fmt.Printf("Command (not executed): %s\n", command)
 	} else {
 
