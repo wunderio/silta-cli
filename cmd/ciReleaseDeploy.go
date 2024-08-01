@@ -384,9 +384,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# Wait for resources to be ready
 				# Get all deployments and statefulsets in the release and check the status of each one.
-				statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name)
+				statefulsets=$(kubectl get statefulset -n "${NAMESPACE}" -l "release=${RELEASE_NAME}" -o=json | jq '.items[]|select(.spec.updateStrategy.type=="RollingUpdate")|.metadata.name')
 				if [ ! -z "$statefulsets" ]; then
-					echo "$statefulsets" | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
+					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
 				`,
@@ -617,9 +617,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 				# Wait for resources to be ready
 				# Get all deployments and statefulsets in the release and check the status of each one.
-				statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name)
+				statefulsets=$(kubectl get statefulset -n "${NAMESPACE}" -l "release=${RELEASE_NAME}" -o=json | jq '.items[]|select(.spec.updateStrategy.type=="RollingUpdate")|.metadata.name')
 				if [ ! -z "$statefulsets" ]; then
-					echo "$statefulsets" | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
+					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
 				`,
