@@ -30,10 +30,10 @@ var ciReleaseCleanfailedCmd = &cobra.Command{
 					kubectl delete pvc -n "${NAMESPACE}" -l release="${RELEASE_NAME}"
 					kubectl delete pvc -n "${NAMESPACE}" -l app="${RELEASE_NAME}-es"
 
-					echo -n "Waiting for volumes to be deleted."
+					echo "Waiting for volumes to be deleted."
 					until [[ -z $(kubectl get pv | grep "${NAMESPACE}/${RELEASE_NAME}-") ]]
 					do
-					echo -n "."
+					echo "."
 					sleep 5
 					done
 				fi
