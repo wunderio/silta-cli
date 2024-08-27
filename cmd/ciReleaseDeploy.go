@@ -100,9 +100,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 		deploymentTimeoutSeconds := 900
 		deploymentTimeoutDuration, err := time.ParseDuration(deploymentTimeout)
 		if err != nil {
-		    log.Println("Invalid deployment timeout duration, using default 15m.")
+			log.Println("Invalid deployment timeout duration, using default 15m.")
 		} else {
-		    deploymentTimeoutSeconds = int(deploymentTimeoutDuration.Seconds())
+			deploymentTimeoutSeconds = int(deploymentTimeoutDuration.Seconds())
 		}
 
 		// Chart value overrides
@@ -165,6 +165,10 @@ var ciReleaseDeployCmd = &cobra.Command{
 		if !debug {
 			// Add helm repositories
 			command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
+			exec.Command("bash", "-c", command).Run()
+
+			// Make sure repositories are up to date
+			command = "helm repo update"
 			exec.Command("bash", "-c", command).Run()
 
 			// Delete existing jobs to prevent getting wrong log output

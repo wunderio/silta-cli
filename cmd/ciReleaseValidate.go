@@ -109,6 +109,14 @@ var ciReleaseValidateCmd = &cobra.Command{
 
 		if chartName == "drupal" || strings.HasSuffix(chartName, "/drupal") {
 
+			// Add helm repositories
+			command := fmt.Sprintf("helm repo add '%s' '%s'", "wunderio", chartRepository)
+			exec.Command("bash", "-c", command).Run()
+
+			// Make sure repositories are up to date
+			command = "helm repo update"
+			exec.Command("bash", "-c", command).Run()
+
 			_, errDir := os.Stat(common.ExtendedFolder + "/drupal")
 			if os.IsNotExist(errDir) == false {
 				chartName = common.ExtendedFolder + "/drupal"
@@ -117,7 +125,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 			fmt.Printf("Deploying %s helm release %s in %s namespace\n", chartName, releaseName, namespace)
 
 			// TODO: rewrite the timeout handling and log printing after helm release
-			command := fmt.Sprintf(`
+			command = fmt.Sprintf(`
 			set -Eeuo pipefail
 
 			RELEASE_NAME='%s'
