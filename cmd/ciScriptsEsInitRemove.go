@@ -63,6 +63,7 @@ var ciScriptsEsinitRemoveCmd = &cobra.Command{
 
 		fmt.Printf("Elasticsearch statefulsets: %d\n", len(statefulsets.Items))
 
+		matchCounter := 0
 		patchCounter := 0
 
 		// Loop through all statefulsets and remove es-init container
@@ -84,13 +85,16 @@ var ciScriptsEsinitRemoveCmd = &cobra.Command{
 							log.Printf("cannot patch statefulset, %s", err)
 						}
 
+						patchCounter++
+
 						fmt.Printf("removed\n")
 					}
 
-					patchCounter++
+					matchCounter++
 				}
 			}
 		}
+		fmt.Printf("Total statefulsets matched: %d\n", matchCounter)
 		fmt.Printf("Total statefulsets patched: %d\n", patchCounter)
 	},
 }
