@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // ciReleaseDeployCmd represents the ciReleaseDeploy command
@@ -487,10 +491,39 @@ var ciReleaseDeployCmd = &cobra.Command{
 
 			// Disable reference data if the required volume is not present.
 			referenceDataOverride := ""
-			if debug == false {
-				command = fmt.Sprintf("kubectl get persistentvolume | grep --extended-regexp '%s/.*-reference-data'", namespace)
-				err := exec.Command("bash", "-c", command).Run()
+			if !debug {
+
+				homeDir, err := os.UserHomeDir()
 				if err != nil {
+					log.Fatalf("cannot read user home dir")
+				}
+				kubeConfigPath := homeDir + "/.kube/config"
+
+				//k8s go client init logic
+				config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+				if err != nil {
+					log.Fatalf("cannot read kubeConfig from path: %s", err)
+				}
+				clientset, err := kubernetes.NewForConfig(config)
+				if err != nil {
+					log.Fatalf("cannot initialize k8s client: %s", err)
+				}
+
+				// PVC name can be either "*-reference-data" or "*-reference", so we need to check both
+				// Unless we parse and merge configuration yaml files, we can't know the exact name of the PVC
+				// Check all pvc's in the namespace and see if any of them match the pattern
+				pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), v1.ListOptions{})
+				if err != nil {
+					log.Fatalf("cannot get persistent volume claims: %s", err)
+				}
+				referenceDataExists := false
+				for _, pvc := range pvcs.Items {
+					if strings.HasSuffix(pvc.Name, "-reference-data") || strings.HasSuffix(pvc.Name, "-reference") {
+						referenceDataExists = true
+						break
+					}
+				}
+				if !referenceDataExists {
 					referenceDataOverride = "--set referenceData.skipMount=true"
 				}
 			}
