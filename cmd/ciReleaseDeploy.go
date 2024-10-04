@@ -11,7 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1core "k8s.io/api/core/v1"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -145,26 +146,46 @@ var ciReleaseDeployCmd = &cobra.Command{
 			chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
 		}
 
-		// TODO: Create namespace if it doesn't exist
-		// & tag the namespace if it isn't already tagged.
-		// TODO: Rewrite
+		if !debug {
+			// Connect to the cluster
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalf("cannot read user home dir")
+			}
+			kubeConfigPath := homeDir + "/.kube/config"
 
-		command := fmt.Sprintf(`
-				# Deployed chart version
-				NAMESPACE='%s'
+			//k8s go client init logic
+			config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+			if err != nil {
+				log.Fatalf("cannot read kubeConfig from path: %s", err)
+			}
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				log.Fatalf("cannot initialize k8s client: %s", err)
+			}
 
-				# Create the namespace if it doesn't exist.
-				if ! kubectl get namespace "$NAMESPACE" &>/dev/null ; then
-					kubectl create namespace "$NAMESPACE"
-				fi
+			// Create namespace if it doesn't exist
+			_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, v1meta.GetOptions{})
+			if err != nil {
+				_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), &v1core.Namespace{
+					ObjectMeta: v1meta.ObjectMeta{
+						Name: namespace,
+					},
+				}, v1meta.CreateOptions{})
+				if err != nil {
+					log.Fatalf("cannot create namespace: %s", err)
+				}
+			}
+		}
 
-				# Tag the namespace if it isn't already tagged.
-				if ! kubectl get namespace -l name=$NAMESPACE --no-headers  2>/dev/null | grep $NAMESPACE &>/dev/null ; then
-					kubectl label namespace "$NAMESPACE" "name=$NAMESPACE" --overwrite
-				fi
+		// Add imagePullsecret to release values if IMAGE_PULL_SECRET is set
+		imagePullSecret := os.Getenv("IMAGE_PULL_SECRET")
+		if len(imagePullSecret) > 0 {
+			helmFlags = fmt.Sprintf("%s --set imagePullSecret='%s'", helmFlags, imagePullSecret)
+		}
 
-			`, namespace)
-		pipedExec(command, "", "ERROR: ", debug)
+		// TODO: fix this
+		command := ""
 
 		if !debug {
 			// Add helm repositories
@@ -493,6 +514,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			referenceDataOverride := ""
 			if !debug {
 
+				// Connect to the cluster
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					log.Fatalf("cannot read user home dir")
@@ -512,7 +534,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				// PVC name can be either "*-reference-data" or "*-reference", so we need to check both
 				// Unless we parse and merge configuration yaml files, we can't know the exact name of the PVC
 				// Check all pvc's in the namespace and see if any of them match the pattern
-				pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), v1.ListOptions{})
+				pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), v1meta.ListOptions{})
 				if err != nil {
 					log.Fatalf("cannot get persistent volume claims: %s", err)
 				}

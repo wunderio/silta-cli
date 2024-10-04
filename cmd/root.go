@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
@@ -35,6 +36,19 @@ func init() {
 	// Persistent flags
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Print variables, do not execute external commands, rather print them")
 	rootCmd.PersistentFlags().BoolVar(&useEnv, "use-env", true, "Use environment variables for value assignment")
+
+	// Rewrite per-cluster environment variables
+	cluster_id := os.Getenv("SILTA_CLUSTER_ID")
+	if len(cluster_id) > 0 {
+		// iterate all environment variables, search for keys with "<${SILTA_CLUSTER_ID}>_" prefix
+		// and rewrite them to the corresponding keys without the prefix
+		for _, e := range os.Environ() {
+			pair := strings.SplitN(e, "=", 2)
+			if strings.HasPrefix(pair[0], cluster_id+"_") {
+				os.Setenv(strings.TrimPrefix(pair[0], cluster_id+"_"), pair[1])
+			}
+		}
+	}
 
 	// Load configuration
 	configStore := common.ConfigStore()
