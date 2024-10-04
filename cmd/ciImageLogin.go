@@ -53,6 +53,19 @@ Available flags and environment variables:
 		aksSPAppID, _ := cmd.Flags().GetString("aks-sp-app-id")
 		aksSPPass, _ := cmd.Flags().GetString("aks-sp-password")
 
+		// Rewrite per-cluster environment variables
+		cluster_id := os.Getenv("SILTA_CLUSTER_ID")
+		if len(cluster_id) > 0 {
+			// iterate all environment variables, search for keys with "<${SILTA_CLUSTER_ID}>_" prefix
+			// and rewrite them to the corresponding keys without the prefix
+			for _, e := range os.Environ() {
+				pair := strings.SplitN(e, "=", 2)
+				if strings.HasPrefix(pair[0], cluster_id+"_") {
+					os.Setenv(strings.TrimPrefix(pair[0], cluster_id+"_"), pair[1])
+				}
+			}
+		}
+
 		// Use environment variables as fallback
 		if useEnv {
 			if len(gcpKeyJson) == 0 {

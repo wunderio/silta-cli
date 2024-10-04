@@ -131,9 +131,11 @@ var ciReleaseDiffCmd = &cobra.Command{
 			chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
 		}
 
-		// TODO: Create namespace if it doesn't exist
-		// & tag the namespace if it isn't already tagged.
-		// TODO: Rewrite
+		// Add imagePullsecret to release values if IMAGE_PULL_SECRET is set
+		imagePullSecret := os.Getenv("IMAGE_PULL_SECRET")
+		if len(imagePullSecret) > 0 {
+			helmFlags = fmt.Sprintf("%s --set imagePullSecret='%s'", helmFlags, imagePullSecret)
+		}
 
 		if !debug {
 			// Add helm repositories
