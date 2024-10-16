@@ -11,7 +11,7 @@ silta ci release validate [flags]
 ```
       --branchname string               Repository branchname that will be used for release name and environment name creation
       --chart-name string               Chart name
-      --chart-repository string         Chart repository
+      --chart-repository string         Chart repository (default "https://storage.googleapis.com/charts.wdr.io")
       --chart-version string            Deploy a specific chart version
       --cluster-type string             Cluster type (i.e. gke, aws, aks, other)
   -h, --help                            help for validate

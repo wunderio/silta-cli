@@ -1,10 +1,10 @@
-## silta ci release deploy
+## silta ci release diff
 
-Deploy release
+Diff release resources
 
 ### Synopsis
 
-Release deployment
+Release diff command is used to compare the resources of a release with the current state of the cluster.
 	
 	* Chart allows prepending extra configuration (to helm --values line) via 
 	"SILTA_<chart_name>_CONFIG_VALUES" environment variable. It has to be a 
@@ -15,7 +15,7 @@ Release deployment
 	
 
 ```
-silta ci release deploy [flags]
+silta ci release diff [flags]
 ```
 
 ### Options
@@ -24,16 +24,15 @@ silta ci release deploy [flags]
       --branchname string               Repository branchname that will be used for release name and environment name creation
       --chart-name string               Chart name
       --chart-repository string         Chart repository (default "https://storage.googleapis.com/charts.wdr.io")
-      --chart-version string            Deploy a specific chart version
+      --chart-version string            Diff a specific chart version
       --cluster-domain string           Base domain for cluster urls (i.e. dev.example.com)
       --cluster-type string             Cluster type (i.e. gke, aws, aks, other)
       --db-root-pass string             Database password for root account
       --db-user-pass string             Database password for user account
-      --deployment-timeout string       Helm deployment timeout
       --gitauth-password string         Gitauth server password
       --gitauth-username string         Gitauth server username
       --helm-flags string               Extra flags for helm release
-  -h, --help                            help for deploy
+  -h, --help                            help for diff
       --namespace string                Project name (namespace, i.e. "drupal-project")
       --nginx-image-url string          PHP image url
       --php-image-url string            PHP image url

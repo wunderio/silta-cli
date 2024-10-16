@@ -24,6 +24,9 @@ var ciReleaseDiffCmd = &cobra.Command{
 	* Chart allows prepending extra configuration (to helm --values line) via 
 	"SILTA_<chart_name>_CONFIG_VALUES" environment variable. It has to be a 
 	base64 encoded string of a silta configuration yaml file.
+
+	* If IMAGE_PULL_SECRET is set (base64 encoded), it will be added to the 
+	release values as imagePullSecret.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -131,9 +134,11 @@ var ciReleaseDiffCmd = &cobra.Command{
 			chartVersionOverride = fmt.Sprintf("--version '%s'", chartVersion)
 		}
 
-		// TODO: Create namespace if it doesn't exist
-		// & tag the namespace if it isn't already tagged.
-		// TODO: Rewrite
+		// Add imagePullsecret to release values if IMAGE_PULL_SECRET is set
+		imagePullSecret := os.Getenv("IMAGE_PULL_SECRET")
+		if len(imagePullSecret) > 0 {
+			helmFlags = fmt.Sprintf("%s --set imagePullSecret='%s'", helmFlags, imagePullSecret)
+		}
 
 		if !debug {
 			// Add helm repositories

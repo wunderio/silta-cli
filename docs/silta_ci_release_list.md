@@ -1,18 +1,16 @@
-## silta ci release delete
+## silta ci release list
 
-Delete a release
+List releases
 
 ```
-silta ci release delete [flags]
+silta ci release list [flags]
 ```
 
 ### Options
 
 ```
-      --delete-pvcs           Delete PVCs (default: true) (default true)
-  -h, --help                  help for delete
-      --namespace string      Project name (namespace, i.e. "drupal-project")
-      --release-name string   Release name
+  -h, --help               help for list
+  -n, --namespace string   Project name (namespace, i.e. "drupal-project")
 ```
 
 ### Options inherited from parent commands
