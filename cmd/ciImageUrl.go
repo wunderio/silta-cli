@@ -49,6 +49,10 @@ var ciImageUrlCmd = &cobra.Command{
 		if _, err := os.Stat(fmt.Sprintf("%s/.dockerignore", buildPath)); err == nil {
 			excludeDockerignore = fmt.Sprintf("--exclude-from='%s'/.dockerignore", buildPath)
 		}
+		// use <dockerfile>.dockerignore if exists, later takes precedence
+		if _, err := os.Stat(fmt.Sprintf("%s.dockerignore", dockerfile)); err == nil {
+			excludeDockerignore = fmt.Sprintf("--exclude-from='%s.dockerignore'", dockerfile)
+		}
 
 		// If no path is specified, build from an empty directory
 		if len(buildPath) == 0 {
