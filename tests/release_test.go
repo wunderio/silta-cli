@@ -197,6 +197,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				else
 					true
 				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
@@ -308,6 +309,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 				else
 					true
 				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
