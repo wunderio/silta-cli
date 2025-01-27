@@ -48,6 +48,9 @@ var cloudLoginCmd = &cobra.Command{
 	  - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable
 	  - "--aks-sp-app-id" flag or "AKS_SP_APP_ID" environment variable
 	  - "--aks-sp-password" flag or "AKS_SP_PASSWORD" environment variable
+
+	After login, the connection is tested by running "kubectl can-i get pods" command, 
+	disable with "--test-connection=false" flag.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -77,7 +80,7 @@ var cloudLoginCmd = &cobra.Command{
 		}
 
 		// Environment value fallback
-		if useEnv == true {
+		if useEnv {
 			if len(clusterName) == 0 {
 				clusterName = os.Getenv("CLUSTER_NAME")
 			}
@@ -267,7 +270,7 @@ var cloudLoginCmd = &cobra.Command{
 
 		// Execute login commands
 		if command != "" {
-			if debug == true {
+			if debug {
 				fmt.Printf("Command (not executed): %s\n", command)
 			} else {
 				out, err := exec.Command("bash", "-c", command).CombinedOutput()
@@ -276,6 +279,20 @@ var cloudLoginCmd = &cobra.Command{
 					log.Fatal("Error: ", err)
 				}
 				fmt.Printf("%s\n", out)
+			}
+		}
+
+		// Test connection
+		testConnection, _ := cmd.Flags().GetBool("test-connection")
+		if testConnection {
+			if !debug {
+				command = "kubectl can-i get pods"
+				_, err := exec.Command("bash", "-c", command).CombinedOutput()
+				if err != nil {
+					log.Fatal("Error: ", err)
+				}
+			} else {
+				fmt.Printf("Command (not executed): %s\n", command)
 			}
 		}
 	},
@@ -299,4 +316,5 @@ func init() {
 	cloudLoginCmd.Flags().String("aks-tenant-id", "", "Azure Services tenant id")
 	cloudLoginCmd.Flags().String("aks-sp-app-id", "", "Azure Services servicePrincipal app id")
 	cloudLoginCmd.Flags().String("aks-sp-password", "", "Azure Services servicePrincipal password")
+	cloudLoginCmd.Flags().Bool("test-connection", true, "Test connection after login")
 }

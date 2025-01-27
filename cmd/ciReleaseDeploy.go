@@ -353,6 +353,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				else
 					true
 				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
@@ -421,6 +422,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
+				rm -f helm-output.log
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,
@@ -612,6 +614,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				else
 					true
 				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
@@ -684,6 +687,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
+				rm -f helm-output.log
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,

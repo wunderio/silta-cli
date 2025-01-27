@@ -14,7 +14,9 @@ func TestCloudLoginCmd(t *testing.T) {
 	// Custom kubeconfig
 	command := "cloud login --kubeconfig `echo \"TEST\" | base64` --kubeconfigpath tmpkubeconfig --debug; cat tmpkubeconfig; rm tmpkubeconfig"
 	environment := []string{}
-	testString := "TEST\n"
+	testString := `Command (not executed): 
+TEST
+`
 	CliExecTest(t, command, environment, testString, true)
 
 	// Custom kubeconfig as env variable
@@ -23,7 +25,9 @@ func TestCloudLoginCmd(t *testing.T) {
 		// echo "TEST2" | base64 => "VEVTVDIK"
 		"KUBECTL_CONFIG=VEVTVDIK",
 	}
-	testString = "TEST2\n"
+	testString = `Command (not executed): 
+TEST2
+`
 	CliExecTest(t, command, environment, testString, true)
 
 	// TODO: test gcp, aws and aks
