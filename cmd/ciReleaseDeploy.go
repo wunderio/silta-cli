@@ -168,6 +168,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			}
 
 			// Create namespace if it doesn't exist
+			// Describe namespace
 			_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, v1meta.GetOptions{})
 			if err != nil {
 				_, err = clientset.CoreV1().Namespaces().Create(context.TODO(), &v1core.Namespace{
@@ -176,7 +177,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					},
 				}, v1meta.CreateOptions{})
 				if err != nil {
-					log.Fatalf("cannot create namespace: %s", err)
+					log.Printf("cannot create namespace: %s\n", err)
 				}
 			}
 		}
