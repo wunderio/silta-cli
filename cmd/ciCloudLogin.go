@@ -286,7 +286,7 @@ var cloudLoginCmd = &cobra.Command{
 		testConnection, _ := cmd.Flags().GetBool("test-connection")
 		if testConnection {
 			if !debug {
-				command = "kubectl can-i get pods"
+				command = "kubectl auth can-i get pods"
 				_, err := exec.Command("bash", "-c", command).CombinedOutput()
 				if err != nil {
 					log.Fatal("Error: ", err)
