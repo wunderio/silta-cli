@@ -507,8 +507,8 @@ var ciReleaseDeployCmd = &cobra.Command{
 					pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
 
 					if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
-						secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
-						kubectl delete secret -n "$NAMESPACE" "$secret_to_delete"
+						secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" --no-headers | awk '{print $1}')
+						kubectl delete secret -n "$NAMESPACE" "$secret_to_delete" || true
 					fi
 				`, namespace, releaseName)
 			pipedExec(command, "", "ERROR: ", debug)
