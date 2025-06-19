@@ -86,7 +86,7 @@ var ciReleaseCleanfailedCmd = &cobra.Command{
 				fmt.Printf("Deleting secret %s\n", secretName)
 				err := clientset.CoreV1().Secrets(namespace).Delete(context.TODO(), secretName, v1.DeleteOptions{})
 				if err != nil {
-					log.Fatalf("Error deleting secret %s: %s", secretName, err)
+					log.Printf("Error deleting secret %s: %s", secretName, err)
 				}
 			}
 		}
