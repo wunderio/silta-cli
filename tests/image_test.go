@@ -17,7 +17,7 @@ func TestImageLoginCmd(t *testing.T) {
 		"IMAGE_REPO_HOST=foo.bar",
 		"GCLOUD_KEY_JSON=baz",
 	}
-	testString := `echo "baz" | docker login --username "_json_key" --password-stdin https://foo.bar`
+	testString := `echo 'baz' | docker login --username '_json_key' --password-stdin 'https://foo.bar`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Test all env
@@ -43,7 +43,7 @@ AWS_REGION: 555
 AKS_TENANT_ID: 666
 AKS_SP_APP_ID: 777
 AKS_SP_PASSWORD: 888
-Command (not executed): echo "222" | docker login --username "111" --password-stdin https://foo.bar`
+Command (not executed): echo '222' | docker login --username '111' --password-stdin 'https://foo.bar'`
 
 	CliExecTest(t, command, environment, testString, false)
 
@@ -56,7 +56,7 @@ Command (not executed): echo "222" | docker login --username "111" --password-st
 	// Test args
 	command = "ci image login --image-repo-host foo.bar --gcp-key-json baz --debug"
 	environment = []string{}
-	testString = `echo "baz" | docker login --username "_json_key" --password-stdin https://foo.bar`
+	testString = `echo 'baz' | docker login --username '_json_key' --password-stdin 'https://foo.bar'`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Test all args
@@ -83,7 +83,7 @@ AWS_REGION: 555
 AKS_TENANT_ID: 666
 AKS_SP_APP_ID: 777
 AKS_SP_PASSWORD: 888
-Command (not executed): echo "222" | docker login --username "111" --password-stdin https://foo.bar`
+Command (not executed): echo '222' | docker login --username '111' --password-stdin 'https://foo.bar'`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Test args+env merge
@@ -92,7 +92,7 @@ Command (not executed): echo "222" | docker login --username "111" --password-st
 		"IMAGE_REPO_HOST=bar.bar",
 		"GCLOUD_KEY_JSON=baz",
 	}
-	testString = `echo "baz" | docker login --username "_json_key" --password-stdin https://foo.bar`
+	testString = `echo 'baz' | docker login --username '_json_key' --password-stdin 'https://foo.bar'`
 	CliExecTest(t, command, environment, testString, false)
 
 	// Change dir back to previous
