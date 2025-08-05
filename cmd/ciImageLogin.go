@@ -117,14 +117,14 @@ Available flags and environment variables:
 					protocol = "http://"
 				}
 				// User && pass login
-				command = fmt.Sprintf("echo '%s' | docker login --username '%s' --password-stdin '%s%s'", imageRepoPass, imageRepoUser, protocol, imageRepoHost)
+				command = fmt.Sprintf("echo %q | docker login --username '%s' --password-stdin %s%s", imageRepoPass, imageRepoUser, protocol, imageRepoHost)
 
 			} else if gcpKeyJson != "" {
 				// GCR login
 				if !strings.Contains(imageRepoHost, "://") {
 					imageRepoHost = "https://" + imageRepoHost
 				}
-				command = fmt.Sprintf("echo '%s' | docker login --username '%s' --password-stdin '%s'", gcpKeyJson, "_json_key", imageRepoHost)
+				command = fmt.Sprintf("echo %q | docker login --username '%s' --password-stdin %s", gcpKeyJson, "_json_key", imageRepoHost)
 
 			} else if awsSecretAccessKey != "" {
 				//Get AWS Account ID
@@ -137,11 +137,11 @@ Available flags and environment variables:
 				// ECR login
 				command = fmt.Sprintf("aws ecr get-login-password --region %s | docker login --username AWS --password-stdin %s.dkr.ecr.%s.amazonaws.com", awsRegion, awsAccountId, awsRegion)
 				// TODO: use aws cli v2
-				// command = fmt.Sprintf("echo '%s' | docker login --username AWS --password-stdin %s", awsSecretAccessKey, imageRepoHost)
+				// command = fmt.Sprintf("echo %q | docker login --username AWS --password-stdin %s", awsSecretAccessKey, imageRepoHost)
 
 			} else if aksSPPass != "" {
 				// ACR Login
-				command = fmt.Sprintf("echo '%s' | docker login --username '%s' --password-stdin '%s'", aksSPPass, aksSPAppID, imageRepoHost)
+				command = fmt.Sprintf("echo %q | docker login --username '%s' --password-stdin %s", aksSPPass, aksSPAppID, imageRepoHost)
 			}
 
 			if command != "" {
