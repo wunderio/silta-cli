@@ -30,17 +30,22 @@ var ciScriptsEsinitRemoveCmd = &cobra.Command{
 			fmt.Printf("Namespace: %s\n", namespace)
 		}
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatalf("cannot read user home dir")
+		// Try reading KUBECONFIG from environment variable first
+		kubeConfigPath := os.Getenv("KUBECONFIG")
+		if kubeConfigPath == "" {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalf("cannot read user home dir")
+			}
+			kubeConfigPath = homeDir + "/.kube/config"
 		}
-		kubeConfigPath := homeDir + "/.kube/config"
 
 		//k8s go client init logic
 		config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path: %s", err)
+			log.Fatalf("cannot read kubeConfig from path: %s", kubeConfigPath)
 		}
+
 		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			log.Fatalf("cannot initialize k8s client: %s", err)

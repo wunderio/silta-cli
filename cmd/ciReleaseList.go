@@ -19,12 +19,17 @@ var ciReleaseListCmd = &cobra.Command{
 
 		namespace, _ := cmd.Flags().GetString("namespace")
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Println("cannot read user home dir")
-			os.Exit(1)
+		// Try reading KUBECONFIG from environment variable first
+		kubeConfigPath := os.Getenv("KUBECONFIG")
+		if kubeConfigPath == "" {
+			// If not set, use the default kube config path
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				fmt.Println("cannot read user home dir")
+				os.Exit(1)
+			}
+			kubeConfigPath = homeDir + "/.kube/config"
 		}
-		kubeConfigPath := homeDir + "/.kube/config"
 
 		kubeConfig, err := os.ReadFile(kubeConfigPath)
 		if err != nil {
