@@ -20,15 +20,27 @@ var ciReleaseDeleteCmd = &cobra.Command{
 		namespace, _ := cmd.Flags().GetString("namespace")
 		deletePVCs, _ := cmd.Flags().GetBool("delete-pvcs")
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatalf("cannot read user home dir")
-		}
-		kubeConfigPath := homeDir + "/.kube/config"
+		// Try reading KUBECONFIG from environment variable first
+		kubeConfigPath := os.Getenv("KUBECONFIG")
+		if kubeConfigPath == "" {
+			// If not set, use the default kube config path
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalf("cannot read user home dir")
+			}
+			kubeConfigPath = homeDir + "/.kube/config"
 
+		}
+
+		// Read kubeConfig from file
+		if _, err := os.Stat(kubeConfigPath); os.IsNotExist(err) {
+			log.Fatalf("kubeConfig file does not exist at path: %s", kubeConfigPath)
+		}
+
+		// Read kubeConfig file
 		kubeConfig, err := os.ReadFile(kubeConfigPath)
 		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path")
+			log.Fatalf("cannot read kubeConfig from path: %s", kubeConfigPath)
 		}
 
 		//k8s go client init logic

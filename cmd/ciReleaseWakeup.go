@@ -24,15 +24,19 @@ var ciReleaseWakeupCmd = &cobra.Command{
 		releaseName, _ := cmd.Flags().GetString("release-name")
 		namespace, _ := cmd.Flags().GetString("namespace")
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatalf("cannot read user home dir")
+		// Try reading KUBECONFIG from environment variable first
+		kubeConfigPath := os.Getenv("KUBECONFIG")
+		if kubeConfigPath == "" {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalf("cannot read user home dir")
+			}
+			kubeConfigPath = homeDir + "/.kube/config"
 		}
-		kubeConfigPath := homeDir + "/.kube/config"
 
 		kubeConfig, err := os.ReadFile(kubeConfigPath)
 		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path")
+			log.Fatalf("cannot read kubeConfig from path: %s", kubeConfigPath)
 		}
 
 		// k8s go client init logic

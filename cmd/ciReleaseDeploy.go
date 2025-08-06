@@ -150,12 +150,22 @@ var ciReleaseDeployCmd = &cobra.Command{
 		}
 
 		if !debug {
-			// Connect to the cluster
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				log.Fatalf("cannot read user home dir")
+
+			// Try reading KUBECONFIG from environment variable first
+			kubeConfigPath := os.Getenv("KUBECONFIG")
+			if kubeConfigPath == "" {
+				// If not set, use the default kube config path
+				homeDir, err := os.UserHomeDir()
+				if err != nil {
+					log.Fatalf("cannot read user home dir")
+				}
+				kubeConfigPath = homeDir + "/.kube/config"
 			}
-			kubeConfigPath := homeDir + "/.kube/config"
+
+			// Read kubeConfig from file
+			if _, err := os.Stat(kubeConfigPath); os.IsNotExist(err) {
+				log.Fatalf("kubeConfig file does not exist at path: %s", kubeConfigPath)
+			}
 
 			//k8s go client init logic
 			config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)

@@ -93,14 +93,14 @@ var ciReleaseValidateCmd = &cobra.Command{
 			pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
 
 			if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
-				upgrade_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
-				install_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-install,name="$RELEASE_NAME" -n "$NAMESPACE" | awk '{print $1}' | grep -v NAME)
+				upgrade_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" --no-headers | awk '{print $1}')
+				install_secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-install,name="$RELEASE_NAME" -n "$NAMESPACE" --no-headers | awk '{print $1}')
 				
 				if [[ ! -z "$upgrade_secret_to_delete" ]] ; then
-					kubectl delete secret -n "$NAMESPACE" "$upgrade_secret_to_delete"
+					kubectl delete secret -n "$NAMESPACE" "$upgrade_secret_to_delete" || true
 				fi
 				if [[ ! -z "$install_secret_to_delete" ]] ; then
-					kubectl delete secret -n "$NAMESPACE" "$install_secret_to_delete"
+					kubectl delete secret -n "$NAMESPACE" "$install_secret_to_delete" || true
 				fi
 			fi
 			`, namespace, releaseName)
