@@ -74,10 +74,8 @@ jobs:
           gsutil cp "dist/$FILE_NAME" \
             "gs://${{ secrets.GCP_BUCKET_NAME }}/releases/${RELEASE_TAG}/$FILE_NAME"
           # Upload as latest version
-          RELEASE_TAG="latest"
-          FILE_NAME="silta-${RELEASE_TAG}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
           gsutil cp "dist/$FILE_NAME" \
-            "gs://${{ secrets.GCP_BUCKET_NAME }}/releases/${RELEASE_TAG}/$FILE_NAME"
+            "gs://${{ secrets.GCP_BUCKET_NAME }}/releases/latest/silta-latest-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
           
 
   circleci-k8s-test-build:
