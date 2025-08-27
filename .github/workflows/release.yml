@@ -55,7 +55,7 @@ jobs:
           mkdir -p dist
           RELEASE_TAG="${{ steps.vars.outputs.tag }}"
           BIN_NAME="silta-${{ matrix.goos }}-${{ matrix.goarch }}"
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 \
             go build -ldflags "-X github.com/wunderio/silta-cli/internal/common.Version=${RELEASE_TAG} -s -w" \
             -o dist/$BIN_NAME
           tar -czf dist/silta-${RELEASE_TAG}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz \
