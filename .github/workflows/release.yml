@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: azure/setup-helm@v3
         with:
-          version: 'v3.6.3'
+          version: 'v3.18.4'
         name: Install Helm
       - name: Add wunderio Helm repo
         run: helm repo add wunderio https://storage.googleapis.com/charts.wdr.io
@@ -39,17 +39,45 @@ jobs:
         goarch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
+      - name: Auth to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Set output
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
-      - uses: wangyoucao577/go-release-action@v1.24
+      - name: Build binary
+        run: |
+          mkdir -p dist
+          RELEASE_TAG="${{ steps.vars.outputs.tag }}"
+          BIN_NAME="silta-${{ matrix.goos }}-${{ matrix.goarch }}"
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 \
+            go build -ldflags "-X github.com/wunderio/silta-cli/internal/common.Version=${RELEASE_TAG} -s -w" \
+            -o dist/$BIN_NAME
+          tar -czf dist/silta-${RELEASE_TAG}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz \
+            -C dist $BIN_NAME --transform="s|$BIN_NAME|silta|"
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          goversion: "https://go.dev/dl/go1.24.4.linux-amd64.tar.gz"
-          binary_name: "silta"
-          ldflags: "-X github.com/wunderio/silta-cli/internal/common.Version=${{ steps.vars.outputs.tag }} -s -w"
+          tag_name: "${{ steps.vars.outputs.tag }}"
+          files: dist/silta-${{ steps.vars.outputs.tag }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload to GCS
+        run: |
+          RELEASE_TAG="${{ steps.vars.outputs.tag }}"
+          FILE_NAME="silta-${RELEASE_TAG}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
+          gsutil cp "dist/$FILE_NAME" \
+            "gs://${{ secrets.GCP_BUCKET_NAME }}/releases/${RELEASE_TAG}/$FILE_NAME"
+          # Upload as latest version
+          gsutil cp "dist/$FILE_NAME" \
+            "gs://${{ secrets.GCP_BUCKET_NAME }}/releases/latest/silta-latest-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz"
+          
+
   circleci-k8s-test-build:
     name: Test released CLI
     runs-on: ubuntu-latest
