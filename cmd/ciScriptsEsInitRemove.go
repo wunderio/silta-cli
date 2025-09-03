@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/wunderio/silta-cli/internal/common"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var ciScriptsEsinitRemoveCmd = &cobra.Command{
@@ -30,25 +28,9 @@ var ciScriptsEsinitRemoveCmd = &cobra.Command{
 			fmt.Printf("Namespace: %s\n", namespace)
 		}
 
-		// Try reading KUBECONFIG from environment variable first
-		kubeConfigPath := os.Getenv("KUBECONFIG")
-		if kubeConfigPath == "" {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				log.Fatalf("cannot read user home dir")
-			}
-			kubeConfigPath = homeDir + "/.kube/config"
-		}
-
-		//k8s go client init logic
-		config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+		clientset, err := common.GetKubeClient()
 		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path: %s", kubeConfigPath)
-		}
-
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			log.Fatalf("cannot initialize k8s client: %s", err)
+			log.Fatalf("failed to get kube client: %v", err)
 		}
 
 		// Sanity check - query if daemonset with es-init is installed. It has a specific name, silta-cluster-ds in silta-cluster namespace

@@ -11,8 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // ciReleaseDiffCmd represents the ciReleaseDiff command
@@ -280,27 +278,9 @@ var ciReleaseDiffCmd = &cobra.Command{
 			referenceDataOverride := ""
 			if !debug {
 
-				// Try reading KUBECONFIG from environment variable first
-				kubeConfigPath := os.Getenv("KUBECONFIG")
-				if kubeConfigPath == "" {
-					homeDir, err := os.UserHomeDir()
-					if err != nil {
-						log.Fatalf("cannot read user home dir")
-					}
-					kubeConfigPath = homeDir + "/.kube/config"
-				}
-				// Read kubeConfig from file
-				if _, err := os.Stat(kubeConfigPath); os.IsNotExist(err) {
-					log.Fatalf("kubeConfig file does not exist at path: %s", kubeConfigPath)
-				}
-				//k8s go client init logic
-				config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+				clientset, err := common.GetKubeClient()
 				if err != nil {
-					log.Fatalf("cannot read kubeConfig from path: %s", err)
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					log.Fatalf("cannot initialize k8s client: %s", err)
+					log.Fatalf("failed to get kube client: %v", err)
 				}
 
 				// PVC name can be either "*-reference-data" or "*-reference", so we need to check both

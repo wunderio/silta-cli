@@ -8,13 +8,14 @@ import (
 	"strconv"
 	"time"
 
-	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/spf13/cobra"
+	"github.com/wunderio/silta-cli/internal/common"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // gcp auth provider
-	"k8s.io/client-go/tools/clientcmd"
+
+	helmAction "helm.sh/helm/v3/pkg/action"
+	helmCli "helm.sh/helm/v3/pkg/cli"
 )
 
 var ciReleaseWakeupCmd = &cobra.Command{
@@ -24,57 +25,23 @@ var ciReleaseWakeupCmd = &cobra.Command{
 		releaseName, _ := cmd.Flags().GetString("release-name")
 		namespace, _ := cmd.Flags().GetString("namespace")
 
-		// Try reading KUBECONFIG from environment variable first
-		kubeConfigPath := os.Getenv("KUBECONFIG")
-		if kubeConfigPath == "" {
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				log.Fatalf("cannot read user home dir")
-			}
-			kubeConfigPath = homeDir + "/.kube/config"
+		clientset, err := common.GetKubeClient()
+		if err != nil {
+			log.Fatalf("failed to get kube client: %v", err)
 		}
 
-		kubeConfig, err := os.ReadFile(kubeConfigPath)
-		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path: %s", kubeConfigPath)
-		}
+		// Helm client init logic
+		settings := helmCli.New()
 
-		// k8s go client init logic
-		config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-		if err != nil {
-			log.Fatalf("cannot read kubeConfig from path: %s", err)
+		actionConfig := new(helmAction.Configuration)
+		if err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+			log.Fatalf("%+v", err)
 		}
-		clientset, err := kubernetes.NewForConfig(config)
+		// Try loading the latest version of the release
+		get := helmAction.NewGet(actionConfig)
+		_, err = get.Run(releaseName)
 		if err != nil {
-			log.Fatalf("cannot initialize k8s client: %s", err)
-		}
-
-		//Helm client init logic
-		opt := &helmclient.KubeConfClientOptions{
-			Options: &helmclient.Options{
-				Namespace:        namespace,
-				RepositoryCache:  "/tmp/.helmcache",
-				RepositoryConfig: "/tmp/.helmrepo",
-				Debug:            false,
-				Linting:          false, // Change this to false if you don't want linting.
-			},
-			KubeContext: "",
-			KubeConfig:  kubeConfig,
-		}
-
-		helmClient, err := helmclient.NewClientFromKubeConf(opt)
-		if err != nil {
-			log.Fatalf("Cannot create client from kubeConfig")
-		}
-
-		// Check if release exists
-		_, err = helmClient.GetRelease(releaseName)
-		if err != nil {
-			if err.Error() == "release: not found" {
-				log.Fatalf("Release not found")
-			} else {
-				log.Fatalf("Cannot get release: %s", err)
-			}
+			log.Fatalf("Release not found: %s", err)
 		}
 
 		selectorLabels := []string{
