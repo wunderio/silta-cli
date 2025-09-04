@@ -62,6 +62,10 @@ var editChartCmd = &cobra.Command{
 			os.Mkdir(common.ExtendedFolder, 0744)
 		}
 
+    // Make sure repositories are up to date
+    command := "helm repo update"
+    exec.Command("bash", "-c", command).Run()
+
 		if len(p) == 2 && chartExistsLocally == false && p[0] != "." {
 			//p[0] - name of the repo
 			//p[1] - name of the chart itself
