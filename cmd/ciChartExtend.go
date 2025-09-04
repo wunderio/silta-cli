@@ -63,7 +63,7 @@ var editChartCmd = &cobra.Command{
 		}
 
     // Make sure repositories are up to date
-    command = "helm repo update"
+    command := "helm repo update"
     exec.Command("bash", "-c", command).Run()
 
 		if len(p) == 2 && chartExistsLocally == false && p[0] != "." {
