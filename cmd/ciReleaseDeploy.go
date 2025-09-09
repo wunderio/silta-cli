@@ -13,8 +13,6 @@ import (
 	"github.com/wunderio/silta-cli/internal/common"
 	v1core "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // ciReleaseDeployCmd represents the ciReleaseDeploy command
@@ -150,33 +148,10 @@ var ciReleaseDeployCmd = &cobra.Command{
 		}
 
 		if !debug {
-
-			// Try reading KUBECONFIG from environment variable first
-			kubeConfigPath := os.Getenv("KUBECONFIG")
-			if kubeConfigPath == "" {
-				// If not set, use the default kube config path
-				homeDir, err := os.UserHomeDir()
-				if err != nil {
-					log.Fatalf("cannot read user home dir")
-				}
-				kubeConfigPath = homeDir + "/.kube/config"
-			}
-
-			// Read kubeConfig from file
-			if _, err := os.Stat(kubeConfigPath); os.IsNotExist(err) {
-				log.Fatalf("kubeConfig file does not exist at path: %s", kubeConfigPath)
-			}
-
-			//k8s go client init logic
-			config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+			clientset, err := common.GetKubeClient()
 			if err != nil {
-				log.Fatalf("cannot read kubeConfig from path: %s", err)
+				log.Fatalf("failed to get kube client: %v", err)
 			}
-			clientset, err := kubernetes.NewForConfig(config)
-			if err != nil {
-				log.Fatalf("cannot initialize k8s client: %s", err)
-			}
-
 			// Create namespace if it doesn't exist
 			// Describe namespace
 			_, err = clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, v1meta.GetOptions{})
@@ -488,40 +463,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			pipedExec(command, "", "ERROR: ", debug)
 
 			// Clean up failed Helm releases
-			// TODO: Rewrite
-			command = fmt.Sprintf(`
-					NAMESPACE='%s'
-					RELEASE_NAME='%s'
-					failed_revision=$(helm list -n "$NAMESPACE" --failed --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)" | tail -1 | cut -f3)
-
-					if [[ "$failed_revision" -eq 1 ]]; then
-						# Remove any existing post-release hook, since it's technically not part of the release.
-						kubectl delete job -n "$NAMESPACE" "$RELEASE_NAME-post-release --ignore-not-found" 2> /dev/null || true
-
-						echo "Removing failed first release."
-						helm delete -n "$NAMESPACE" "$RELEASE_NAME"
-
-						echo "Delete persistent volume claims left over from statefulsets."
-						kubectl delete pvc -n "$NAMESPACE" -l release="$RELEASE_NAME"
-						kubectl delete pvc -n "$NAMESPACE" -l app="$RELEASE_NAME-es"
-
-						echo "Waiting for volumes to be deleted."
-						until [[ -z $(kubectl get pv | grep "$NAMESPACE/$RELEASE_NAME-") ]]
-						do
-						echo "."
-						sleep 10
-						done
-					fi
-
-					# Workaround for previous Helm release stuck in pending state
-					pending_release=$(helm list -n "$NAMESPACE" --pending --filter="(\s|^)($RELEASE_NAME)(\s|$)"| tail -1 | cut -f1)
-
-					if [[ "$pending_release" == "$RELEASE_NAME" ]]; then
-						secret_to_delete=$(kubectl get secret -l owner=helm,status=pending-upgrade,name="$RELEASE_NAME" -n "$NAMESPACE" --no-headers | awk '{print $1}')
-						kubectl delete secret -n "$NAMESPACE" "$secret_to_delete" || true
-					fi
-				`, namespace, releaseName)
-			pipedExec(command, "", "ERROR: ", debug)
+			common.FailedReleaseCleanup(releaseName, namespace)
 
 			// Chart value overrides
 
@@ -529,21 +471,9 @@ var ciReleaseDeployCmd = &cobra.Command{
 			referenceDataOverride := ""
 			if !debug {
 
-				// Connect to the cluster
-				homeDir, err := os.UserHomeDir()
+				clientset, err := common.GetKubeClient()
 				if err != nil {
-					log.Fatalf("cannot read user home dir")
-				}
-				kubeConfigPath := homeDir + "/.kube/config"
-
-				//k8s go client init logic
-				config, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-				if err != nil {
-					log.Fatalf("cannot read kubeConfig from path: %s", err)
-				}
-				clientset, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					log.Fatalf("cannot initialize k8s client: %s", err)
+					log.Fatalf("failed to get kube client: %v", err)
 				}
 
 				// PVC name can be either "*-reference-data" or "*-reference", so we need to check both

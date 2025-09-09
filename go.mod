@@ -12,7 +12,6 @@ require (
 
 require (
 	github.com/google/go-containerregistry v0.20.6
-	github.com/mittwald/go-helm-client v0.12.17
 	github.com/spf13/viper v1.20.1
 	helm.sh/helm/v3 v3.18.3
 	k8s.io/api v0.33.2
