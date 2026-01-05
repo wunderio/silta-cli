@@ -33,6 +33,9 @@ Log in to kubernetes cluster using different methods:
 	  - "--aks-tenant-id" flag or "AKS_TENANT_ID" environment variable
 	  - "--aks-sp-app-id" flag or "AKS_SP_APP_ID" environment variable
 	  - "--aks-sp-password" flag or "AKS_SP_PASSWORD" environment variable
+
+	After login, the connection is tested by running "kubectl can-i get pods" command, 
+	disable with "--test-connection=false" flag.
 	
 
 ```
@@ -57,6 +60,7 @@ silta cloud login [flags]
   -h, --help                           help for login
       --kubeconfig string              Kubernetes config content (plaintext, base64 encoded)
       --kubeconfigpath string          Kubernetes config path (default "~/.kube/config")
+      --test-connection                Test connection after login (default true)
 ```
 
 ### Options inherited from parent commands
