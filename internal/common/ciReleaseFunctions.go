@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -126,4 +127,258 @@ func FailedReleaseCleanup(releaseName string, namespace string) {
 			log.Fatalf("Error deleting secret %s: %s", secretName, err)
 		}
 	}
+}
+
+func DeleteOrphanedReleaseResources(kubernetesClient *kubernetes.Clientset, helmClient *helmAction.Configuration, namespace string, releaseName string, deletePVCs bool, dryRun bool) error {
+	// Select related resources by label selectors
+	selectorLabels := []string{
+		"release",
+		"app.kubernetes.io/instance",
+		"app" + "=" + releaseName + "-es",
+	}
+
+	for _, l := range selectorLabels {
+		selector := l + "=" + releaseName
+		// Delete deployments
+		dpList, _ := kubernetesClient.AppsV1().Deployments(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range dpList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: deployment/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing deployment/%s\n", v.Name)
+				kubernetesClient.AppsV1().Deployments(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete statefulsets
+		stsList, _ := kubernetesClient.AppsV1().StatefulSets(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range stsList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: statefulset/%s\n", v.Name)
+			} else {
+				log.Printf("Removing statefulset/%s\n", v.Name)
+				kubernetesClient.AppsV1().StatefulSets(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete cronjobs
+		cjList, _ := kubernetesClient.BatchV1().CronJobs(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range cjList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: cronjob/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing cronjob/%s\n", v.Name)
+				kubernetesClient.BatchV1().CronJobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete jobs
+		jobList, _ := kubernetesClient.BatchV1().Jobs(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range jobList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: job/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing job/%s\n", v.Name)
+				kubernetesClient.BatchV1().Jobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete horizontal pod autoscalers
+		hpaList, _ := kubernetesClient.AutoscalingV1().HorizontalPodAutoscalers(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range hpaList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: horizontalpodautoscaler/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing horizontalpodautoscaler/%s\n", v.Name)
+				kubernetesClient.AutoscalingV1().HorizontalPodAutoscalers(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete ingresses
+		ingressList, _ := kubernetesClient.NetworkingV1().Ingresses(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range ingressList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: ingress/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing ingress/%s\n", v.Name)
+				kubernetesClient.NetworkingV1().Ingresses(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete pods
+		podList, _ := kubernetesClient.CoreV1().Pods(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range podList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: pod/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing pod/%s\n", v.Name)
+				kubernetesClient.CoreV1().Pods(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete services
+		svcList, _ := kubernetesClient.CoreV1().Services(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range svcList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: service/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing service/%s\n", v.Name)
+				kubernetesClient.CoreV1().Services(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete backendconfigs
+		bcList, _ := kubernetesClient.NetworkingV1().Ingresses(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range bcList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: backendconfig/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing backendconfig/%s\n", v.Name)
+				kubernetesClient.NetworkingV1().Ingresses(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete configmaps
+		cmList, _ := kubernetesClient.CoreV1().ConfigMaps(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range cmList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: configmap/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing configmap/%s\n", v.Name)
+				kubernetesClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete secrets
+		secretList, _ := kubernetesClient.CoreV1().Secrets(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range secretList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: secret/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing secret/%s\n", v.Name)
+				kubernetesClient.CoreV1().Secrets(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete cerficates
+		certList, _ := kubernetesClient.CoreV1().Secrets(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range certList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: certificate/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing certificate/%s\n", v.Name)
+				kubernetesClient.CoreV1().Secrets(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete persistent volume claims
+		if deletePVCs {
+			pvcList, _ := kubernetesClient.CoreV1().PersistentVolumeClaims(namespace).List(context.TODO(), v1.ListOptions{
+				LabelSelector: selector,
+			})
+			for _, v := range pvcList.Items {
+				if dryRun {
+					fmt.Printf("Dry run: persistentvolumeclaim/%s\n", v.Name)
+				} else {
+					fmt.Printf("Removing persistentvolumeclaim/%s\n", v.Name)
+					kubernetesClient.CoreV1().PersistentVolumeClaims(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+				}
+			}
+		}
+
+		// Delete persistent volumes
+		if deletePVCs {
+			pvList, _ := kubernetesClient.CoreV1().PersistentVolumes().List(context.TODO(), v1.ListOptions{
+				LabelSelector: selector,
+			})
+			for _, v := range pvList.Items {
+				if dryRun {
+					fmt.Printf("Dry run: persistentvolume/%s\n", v.Name)
+				} else {
+					fmt.Printf("Removing persistentvolume/%s\n", v.Name)
+					kubernetesClient.CoreV1().PersistentVolumes().Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}
+
+		// Delete network policies
+		npList, _ := kubernetesClient.NetworkingV1().NetworkPolicies(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range npList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: networkpolicy/%s\n", v.Name)
+				continue
+			} else {
+				fmt.Printf("Removing networkpolicy/%s\n", v.Name)
+				kubernetesClient.NetworkingV1().NetworkPolicies(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete rolebindings
+		rbList, _ := kubernetesClient.RbacV1().RoleBindings(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range rbList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: rolebinding/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing rolebinding/%s\n", v.Name)
+				kubernetesClient.RbacV1().RoleBindings(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete roles
+		roleList, _ := kubernetesClient.RbacV1().Roles(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range roleList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: role/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing role/%s\n", v.Name)
+				kubernetesClient.RbacV1().Roles(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+
+		// Delete serviceaccounts
+		saList, _ := kubernetesClient.CoreV1().ServiceAccounts(namespace).List(context.TODO(), v1.ListOptions{
+			LabelSelector: selector,
+		})
+		for _, v := range saList.Items {
+			if dryRun {
+				fmt.Printf("Dry run: serviceaccount/%s\n", v.Name)
+			} else {
+				fmt.Printf("Removing serviceaccount/%s\n", v.Name)
+				kubernetesClient.CoreV1().ServiceAccounts(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{})
+			}
+		}
+	}
+
+	return nil
 }
