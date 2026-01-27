@@ -156,7 +156,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			GIT_REPOSITORY_URL=''
 			GITAUTH_USERNAME=''
 			GITAUTH_PASSWORD=''
-			CLUSTER_DOMAIN=''	
+			CLUSTER_DOMAIN=''
 			EXTRA_NOAUTHIPS=''
 			EXTRA_VPCNATIVE=''
 			EXTRA_CLUSTERTYPE=''
@@ -184,7 +184,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -252,7 +252,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--namespace 19 \
 		--silta-config 20 \
 		--helm-flags 21 \
-		--deployment-timeout 22 \
+		--deployment-timeout 22m \
 		--debug`
 	environment = []string{}
 	testString = `
@@ -268,7 +268,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			GIT_REPOSITORY_URL='10'
 			GITAUTH_USERNAME='11'
 			GITAUTH_PASSWORD='12'
-			CLUSTER_DOMAIN='13'	
+			CLUSTER_DOMAIN='13'
 			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
 			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
 			EXTRA_CLUSTERTYPE='--set cluster.type='16''
@@ -278,8 +278,8 @@ func TestReleaseDeployCmd(t *testing.T) {
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='21'
-			DEPLOYMENT_TIMEOUT='22'
-			DEPLOYMENT_TIMEOUT_SECONDS='900'
+			DEPLOYMENT_TIMEOUT='22m'
+			DEPLOYMENT_TIMEOUT_SECONDS='1320'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
@@ -296,7 +296,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -363,7 +363,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 		--db-user-pass 18 \
 		--namespace 19 \
 		--silta-config 20 \
-		--deployment-timeout 21 \
+		--deployment-timeout 21m \
 		--helm-flags 22 \
 		--debug`
 	environment = []string{}
@@ -375,19 +375,19 @@ func TestReleaseDeployCmd(t *testing.T) {
 			SILTA_ENVIRONMENT_NAME='5'
 			BRANCHNAME='6'
 			NGINX_IMAGE_URL='8'
-			CLUSTER_DOMAIN='13'	
+			CLUSTER_DOMAIN='13'
 			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
 			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
 			EXTRA_CLUSTERTYPE='--set cluster.type='16''
 			NAMESPACE='19'
 			SILTA_CONFIG='20'
 			EXTRA_HELM_FLAGS='22'
-			DEPLOYMENT_TIMEOUT='21'
+			DEPLOYMENT_TIMEOUT='21m'
 
 			# Detect pods in FAILED state
 			function show_failing_pods() {
 				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
 					while IFS= read -r pod; do
@@ -399,7 +399,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -412,6 +412,38 @@ func TestReleaseDeployCmd(t *testing.T) {
 				else
 					true
 				fi
+				# get statefulsets that are not ready
+				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_statefulsets" ]] ; then
+					while IFS= read -r statefulset; do
+						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_statefulsets"
+
+					false
+				else
+					true
+				fi
+				# get deployments that are not ready
+				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_deployments" ]] ; then
+					while IFS= read -r deployment; do
+						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_deployments"
+					false
+				else
+					true
+				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
@@ -469,7 +501,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			SILTA_ENVIRONMENT_NAME='5'
 			BRANCHNAME='6'
 			NGINX_IMAGE_URL='8'
-			CLUSTER_DOMAIN='13'	
+			CLUSTER_DOMAIN='13'
 			EXTRA_NOAUTHIPS='--set nginx.noauthips.vpn='14/32''
 			EXTRA_VPCNATIVE='--set cluster.vpcNative='15''
 			EXTRA_CLUSTERTYPE='--set cluster.type='16''
@@ -481,7 +513,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 			# Detect pods in FAILED state
 			function show_failing_pods() {
 				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
 					while IFS= read -r pod; do
@@ -493,7 +525,7 @@ func TestReleaseDeployCmd(t *testing.T) {
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -506,6 +538,38 @@ func TestReleaseDeployCmd(t *testing.T) {
 				else
 					true
 				fi
+				# get statefulsets that are not ready
+				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_statefulsets" ]] ; then
+					while IFS= read -r statefulset; do
+						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_statefulsets"
+
+					false
+				else
+					true
+				fi
+				# get deployments that are not ready
+				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_deployments" ]] ; then
+					while IFS= read -r deployment; do
+						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_deployments"
+					false
+				else
+					true
+				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR

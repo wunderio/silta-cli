@@ -213,7 +213,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			SILTA_ENVIRONMENT_NAME='%s'
 			BRANCHNAME='%s'
 			NGINX_IMAGE_URL='%s'
-			CLUSTER_DOMAIN='%s'	
+			CLUSTER_DOMAIN='%s'
 			EXTRA_NOAUTHIPS='%s'
 			EXTRA_VPCNATIVE='%s'
 			EXTRA_CLUSTERTYPE='%s'
@@ -225,7 +225,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			# Detect pods in FAILED state
 			function show_failing_pods() {
 				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
 					while IFS= read -r pod; do
@@ -237,7 +237,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -250,6 +250,38 @@ var ciReleaseDeployCmd = &cobra.Command{
 				else
 					true
 				fi
+				# get statefulsets that are not ready
+				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_statefulsets" ]] ; then
+					while IFS= read -r statefulset; do
+						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_statefulsets"
+
+					false
+				else
+					true
+				fi
+				# get deployments that are not ready
+				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_deployments" ]] ; then
+					while IFS= read -r deployment; do
+						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_deployments"
+					false
+				else
+					true
+				fi
+				rm -f helm-output.log
 			}
 
 			trap show_failing_pods ERR
@@ -298,7 +330,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			GIT_REPOSITORY_URL='%s'
 			GITAUTH_USERNAME='%s'
 			GITAUTH_PASSWORD='%s'
-			CLUSTER_DOMAIN='%s'	
+			CLUSTER_DOMAIN='%s'
 			NAMESPACE='%s'
 			EXTRA_NOAUTHIPS='%s'
 			EXTRA_VPCNATIVE='%s'
@@ -313,7 +345,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			# Detect pods in FAILED state
 			function show_failing_pods() {
 				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
 				if [[ ! -z "$failed_pods" ]] ; then
 					echo "Failing pods:"
 					while IFS= read -r pod; do
@@ -325,7 +357,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
@@ -334,6 +366,37 @@ var ciReleaseDeployCmd = &cobra.Command{
 						echo "----"
 					done <<< "$failed_pods"
 
+					false
+				else
+					true
+				fi
+				# get statefulsets that are not ready
+				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_statefulsets" ]] ; then
+					while IFS= read -r statefulset; do
+						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_statefulsets"
+
+					false
+				else
+					true
+				fi
+				# get deployments that are not ready
+				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
+				if [[ ! -z "$not_ready_deployments" ]] ; then
+					while IFS= read -r deployment; do
+						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
+						if [[ ! -z "$events" ]] ; then
+							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
+							echo "$events"
+							echo "----"
+						fi
+					done <<< "$not_ready_deployments"
 					false
 				else
 					true
@@ -513,7 +576,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 			GIT_REPOSITORY_URL='%s'
 			GITAUTH_USERNAME='%s'
 			GITAUTH_PASSWORD='%s'
-			CLUSTER_DOMAIN='%s'	
+			CLUSTER_DOMAIN='%s'
 			EXTRA_NOAUTHIPS='%s'
 			EXTRA_VPCNATIVE='%s'
 			EXTRA_CLUSTERTYPE='%s'
@@ -541,7 +604,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
 						if [[ ! -z "$containers" ]] ; then
 							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}" 
+								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
 							done
 						else
 							echo "no logs found"
