@@ -222,69 +222,16 @@ var ciReleaseDeployCmd = &cobra.Command{
 			EXTRA_HELM_FLAGS='%s'
 			DEPLOYMENT_TIMEOUT='%s'
 
-			# Detect pods in FAILED state
-			function show_failing_pods() {
-				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$failed_pods" ]] ; then
-					echo "Failing pods:"
-					while IFS= read -r pod; do
-						echo "---- ${NAMESPACE} / ${pod} ----"
-						echo "* Events"
-						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
-						echo ""
-						echo "* Logs"
-						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
-						if [[ ! -z "$containers" ]] ; then
-							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
-							done
-						else
-							echo "no logs found"
-						fi
-
-						echo "----"
-					done <<< "$failed_pods"
-
-					false
-				else
-					true
-				fi
-				# get statefulsets that are not ready
-				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$not_ready_statefulsets" ]] ; then
-					while IFS= read -r statefulset; do
-						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
-						if [[ ! -z "$events" ]] ; then
-							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
-							echo "$events"
-							echo "----"
-						fi
-					done <<< "$not_ready_statefulsets"
-
-					false
-				else
-					true
-				fi
-				# get deployments that are not ready
-				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$not_ready_deployments" ]] ; then
-					while IFS= read -r deployment; do
-						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
-						if [[ ! -z "$events" ]] ; then
-							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
-							echo "$events"
-							echo "----"
-						fi
-					done <<< "$not_ready_deployments"
-					false
-				else
-					true
-				fi
-				rm -f helm-output.log
+			function deployment_failed() {
+				debug_failed_deployment
+				rm -f helm-output.log || true
 			}
 
-			trap show_failing_pods ERR
+			function debug_failed_deployment() {
+				silta ci release debug-failed --release-name="${RELEASE_NAME}" --namespace="${NAMESPACE}"
+			}
+
+			trap deployment_failed ERR
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -342,69 +289,16 @@ var ciReleaseDeployCmd = &cobra.Command{
 			DEPLOYMENT_TIMEOUT='%s'
 			DEPLOYMENT_TIMEOUT_SECONDS='%d'
 
-			# Detect pods in FAILED state
-			function show_failing_pods() {
-				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -l "app.kubernetes.io/instance=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$failed_pods" ]] ; then
-					echo "Failing pods:"
-					while IFS= read -r pod; do
-						echo "---- ${NAMESPACE} / ${pod} ----"
-						echo "* Events"
-						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
-						echo ""
-						echo "* Logs"
-						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
-						if [[ ! -z "$containers" ]] ; then
-							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
-							done
-						else
-							echo "no logs found"
-						fi
-
-						echo "----"
-					done <<< "$failed_pods"
-
-					false
-				else
-					true
-				fi
-				# get statefulsets that are not ready
-				not_ready_statefulsets=$(kubectl get statefulset -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$not_ready_statefulsets" ]] ; then
-					while IFS= read -r statefulset; do
-						events=$(kubectl get events --field-selector involvedObject.name=${statefulset},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
-						if [[ ! -z "$events" ]] ; then
-							echo "---- ${NAMESPACE} / ${statefulset} statefulset events ----"
-							echo "$events"
-							echo "----"
-						fi
-					done <<< "$not_ready_statefulsets"
-
-					false
-				else
-					true
-				fi
-				# get deployments that are not ready
-				not_ready_deployments=$(kubectl get deployment -n "$NAMESPACE" -l "release=$RELEASE_NAME" -l "app.kubernetes.io/instance=$RELEASE_NAME" -o custom-columns="NAME:metadata.name,READY:status.readyReplicas,REPLICAS:spec.replicas" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$not_ready_deployments" ]] ; then
-					while IFS= read -r deployment; do
-						events=$(kubectl get events --field-selector involvedObject.name=${deployment},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE})
-						if [[ ! -z "$events" ]] ; then
-							echo "---- ${NAMESPACE} / ${deployment} deployment events ----"
-							echo "$events"
-							echo "----"
-						fi
-					done <<< "$not_ready_deployments"
-					false
-				else
-					true
-				fi
-				rm -f helm-output.log
+			function deployment_failed() {
+				debug_failed_deployment
+				rm -f helm-output.log || true
 			}
 
-			trap show_failing_pods ERR
+			function debug_failed_deployment() {
+				silta ci release debug-failed --release-name="${RELEASE_NAME}" --namespace="${NAMESPACE}"
+			}
+
+			trap deployment_failed ERR
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -444,17 +338,17 @@ var ciReleaseDeployCmd = &cobra.Command{
 					# Helm command is complete.
 					if ! ps -p "$pid" > /dev/null; then
 						echo "Helm output:"
-						cat helm-output.log
+						cat helm-output.log || true
 						wait $pid
 						if grep -q "UPGRADE FAILED" helm-output.log ; then
-							show_failing_pods
+							debug_failed_deployment
 						fi
 						break
 					fi
 
 					if [ $TIME_WAITING -gt ${DEPLOYMENT_TIMEOUT_SECONDS} ]; then
 						echo "Timeout waiting for resources."
-						show_failing_pods
+						debug_failed_deployment
 						exit 1
 					fi
 
@@ -470,7 +364,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
-				rm -f helm-output.log
+				rm -f helm-output.log || true
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,
@@ -589,38 +483,16 @@ var ciReleaseDeployCmd = &cobra.Command{
 			DEPLOYMENT_TIMEOUT='%s'
 			DEPLOYMENT_TIMEOUT_SECONDS='%d'
 
-			# Detect pods in FAILED state
-			function show_failing_pods() {
-				echo ""
-				failed_pods=$(kubectl get pod -l "release=$RELEASE_NAME,cronjob!=true" -n "$NAMESPACE" -o custom-columns="POD:metadata.name,STATE:status.containerStatuses[*].ready" --no-headers | grep -E "<none>|false" | grep -Eo '^[^ ]+')
-				if [[ ! -z "$failed_pods" ]] ; then
-					echo "Failing pods:"
-					while IFS= read -r pod; do
-						echo "---- ${NAMESPACE} / ${pod} ----"
-						echo "* Events"
-						kubectl get events --field-selector involvedObject.name=${pod},type!=Normal --show-kind=true --ignore-not-found=true --namespace ${NAMESPACE}
-						echo ""
-						echo "* Logs"
-						containers=$(kubectl get pods "${pod}" --namespace "${NAMESPACE}" -o json | jq -r 'try .status | .containerStatuses[] | select(.ready == false).name')
-						if [[ ! -z "$containers" ]] ; then
-							for container in ${containers}; do
-								kubectl logs "${pod}" --prefix=true --since="${DEPLOYMENT_TIMEOUT}" --namespace "${NAMESPACE}" -c "${container}"
-							done
-						else
-							echo "no logs found"
-						fi
-
-						echo "----"
-					done <<< "$failed_pods"
-
-					false
-				else
-					true
-				fi
-				rm -f helm-output.log
+			function deployment_failed() {
+				debug_failed_deployment
+				rm -f helm-output.log || true
 			}
 
-			trap show_failing_pods ERR
+			function debug_failed_deployment() {
+				silta ci release debug-failed --release-name="${RELEASE_NAME}" --namespace="${NAMESPACE}"
+			}
+
+			trap deployment_failed ERR
 
 			helm upgrade --install "${RELEASE_NAME}" "${CHART_NAME}" \
 				--repo "${CHART_REPOSITORY}" \
@@ -664,17 +536,17 @@ var ciReleaseDeployCmd = &cobra.Command{
 					# Helm command is complete.
 					if ! ps -p "$pid" > /dev/null; then
 						echo "Helm output:"
-						cat helm-output.log
+						cat helm-output.log || true
 						wait $pid
 						if grep -q "UPGRADE FAILED" helm-output.log ; then
-							show_failing_pods
+							debug_failed_deployment
 						fi	
 						break
 					fi
 
 					if [ $TIME_WAITING -gt ${DEPLOYMENT_TIMEOUT_SECONDS} ]; then
 						echo "Timeout waiting for resources."
-						show_failing_pods
+						debug_failed_deployment
 						exit 1
 					fi
 
@@ -690,7 +562,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 					echo "$statefulsets" | xargs -n 1 kubectl rollout status statefulset -n "$NAMESPACE" --timeout 5m
 				fi
 				kubectl get deployment -n "$NAMESPACE" -l "release=${RELEASE_NAME}" -o name | xargs -n 1 kubectl rollout status -n "$NAMESPACE" --timeout 5m
-				rm -f helm-output.log
+				rm -f helm-output.log || true
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
 				siltaEnvironmentName, branchname,
