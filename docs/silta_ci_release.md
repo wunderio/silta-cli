@@ -23,8 +23,9 @@ silta ci release [flags]
 
 * [silta ci](silta_ci.md)	 - Silta CI Commands
 * [silta ci release clean-failed](silta_ci_release_clean-failed.md)	 - Clean failed releases
+* [silta ci release debug-failed](silta_ci_release_debug-failed.md)	 - Debug failed deployment resources
 * [silta ci release delete](silta_ci_release_delete.md)	 - Delete a release
-* [silta ci release delete-resources](silta_ci_release_delete-resources.md)	 - Delete orphhaned release resources
+* [silta ci release delete-resources](silta_ci_release_delete-resources.md)	 - Delete orphaned release resources
 * [silta ci release deploy](silta_ci_release_deploy.md)	 - Deploy release
 * [silta ci release diff](silta_ci_release_diff.md)	 - Diff release resources
 * [silta ci release environmentname](silta_ci_release_environmentname.md)	 - Return environment name

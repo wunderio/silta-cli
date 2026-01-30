@@ -1,6 +1,12 @@
 ## silta ci release delete-resources
 
-Delete orphhaned release resources
+Delete orphaned release resources
+
+### Synopsis
+
+Deletes release resources based on labels ("release", "app.kubernetes.io/instance" and "app=<release-name>-es" (for Elasticsearch storage))
+		This command can be used to clean up resources when helm release configmaps are absent.
+	
 
 ```
 silta ci release delete-resources [flags]
