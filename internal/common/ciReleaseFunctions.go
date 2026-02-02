@@ -23,8 +23,8 @@ func UninstallHelmRelease(kubernetesClient *kubernetes.Clientset, helmClient *he
 	uninstall := helmAction.NewUninstall(helmClient)
 	uninstall.KeepHistory = false // Remove release secrets as well
 	uninstall.DisableHooks = false
-	uninstall.Timeout = 300 // seconds, adjust as needed
-	uninstall.Wait = true   // Wait for resources to be deleted
+	uninstall.Timeout = 300 * time.Second // seconds, adjust as needed
+	uninstall.Wait = true                 // Wait for resources to be deleted
 
 	resp, err := uninstall.Run(releaseName)
 	if err != nil {
