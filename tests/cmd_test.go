@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/pmezard/go-difflib/difflib"
 )
 
 var cliBinaryName = "./silta"
@@ -38,6 +40,8 @@ func CliExecTest(t *testing.T, command string, environment []string, testString 
 		} else {
 			t.Logf("Error: %s", err.String())
 			t.Errorf("Expected :\n '%s' \n Received: \n '%s'\n'%s'", testString, out.String(), err.String())
+			d := diffOutput(t, testString, out.String())
+			t.Errorf("Diff:\n %s", d)
 		}
 
 	} else {
@@ -45,6 +49,22 @@ func CliExecTest(t *testing.T, command string, environment []string, testString 
 		} else {
 			t.Logf("Error: %s", err.String())
 			t.Errorf("Expected :\n '%s' \n Received: \n '%s'\n'%s'", testString, out.String(), err.String())
+			d := diffOutput(t, testString, out.String())
+			t.Errorf("Diff:\n %s", d)
 		}
 	}
+}
+
+func diffOutput(t *testing.T, expected string, received string) string {
+	diff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(expected),
+		B:        difflib.SplitLines(received),
+		FromFile: "Expected",
+		FromDate: "",
+		ToFile:   "Received",
+		ToDate:   "",
+		Context:  1,
+	}
+	text, _ := difflib.GetUnifiedDiffString(diff)
+	return text
 }

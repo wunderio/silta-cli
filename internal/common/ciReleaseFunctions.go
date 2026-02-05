@@ -18,24 +18,9 @@ import (
 // UninstallRelease removes a Helm release and related resources
 func UninstallHelmRelease(kubernetesClient *kubernetes.Clientset, helmClient *helmAction.Configuration, namespace string, releaseName string, deletePVCs bool) error {
 
-	// Do not bail when release removal fails, remove related resources anyway.
 	log.Printf("Removing release: %s", releaseName)
-	uninstall := helmAction.NewUninstall(helmClient)
-	uninstall.KeepHistory = false // Remove release secrets as well
-	uninstall.DisableHooks = false
-	uninstall.Timeout = 300 // seconds, adjust as needed
-	uninstall.Wait = true   // Wait for resources to be deleted
 
-	resp, err := uninstall.Run(releaseName)
-	if err != nil {
-		log.Printf("Failed to remove helm release: %s", err)
-	} else {
-		if resp != nil && resp.Info != "" {
-			log.Printf("Helm uninstall info: %s", resp.Info)
-		}
-	}
-
-	// Delete related jobs
+	// Delete related jobs (mainly post-release jobs)
 	selectorLabels := []string{
 		"release",
 		"app.kubernetes.io/instance",
@@ -50,6 +35,22 @@ func UninstallHelmRelease(kubernetesClient *kubernetes.Clientset, helmClient *he
 			log.Printf("Removing job: %s", v.Name)
 			propagationPolicy := v1.DeletePropagationBackground
 			kubernetesClient.BatchV1().Jobs(namespace).Delete(context.TODO(), v.Name, v1.DeleteOptions{PropagationPolicy: &propagationPolicy})
+		}
+	}
+
+	// Delete helm release
+	uninstall := helmAction.NewUninstall(helmClient)
+	uninstall.KeepHistory = false // Remove release secrets as well
+	uninstall.DisableHooks = false
+	uninstall.Timeout = 300 * time.Second // seconds, adjust as needed
+	uninstall.Wait = true                 // Wait for resources to be deleted
+
+	resp, err := uninstall.Run(releaseName)
+	if err != nil {
+		log.Printf("Failed to remove helm release: %s", err)
+	} else {
+		if resp != nil && resp.Info != "" {
+			log.Printf("Helm uninstall info: %s", resp.Info)
 		}
 	}
 
