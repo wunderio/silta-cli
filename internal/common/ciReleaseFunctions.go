@@ -317,6 +317,10 @@ func DeleteOrphanedReleaseResources(kubernetesClient *kubernetes.Clientset, helm
 				LabelSelector: selector,
 			})
 			for _, v := range pvList.Items {
+				// match meta.helm.sh/release-namespace annotation, skip otherwise
+				if v.Annotations["meta.helm.sh/release-namespace"] != namespace {
+					continue
+				}
 				if dryRun {
 					fmt.Printf("Dry run: persistentvolume/%s\n", v.Name)
 				} else {
