@@ -41,11 +41,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Auth to GCP
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       - name: Set output
@@ -62,7 +62,7 @@ jobs:
           tar -czf dist/silta-${RELEASE_TAG}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz \
             -C dist $BIN_NAME --transform="s|$BIN_NAME|silta|"
       - name: Upload release asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "test"
           files: dist/silta-test-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
