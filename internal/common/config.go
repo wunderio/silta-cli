@@ -10,8 +10,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-func ConfigStore() viper.Viper {
-
+// ConfigDir returns the silta CLI configuration directory, creating it if it
+// does not yet exist.
+func ConfigDir() string {
 	// Default configuration subpath
 	siltaConfigDir := ".config/silta"
 
@@ -40,6 +41,13 @@ func ConfigStore() viper.Viper {
 			log.Fatalf("Error creating config directory, %s", err)
 		}
 	}
+
+	return configDir
+}
+
+func ConfigStore() viper.Viper {
+
+	configDir := ConfigDir()
 
 	// Set the configuration file
 	viper.SetConfigFile(filepath.Join(configDir, "config.yaml"))
