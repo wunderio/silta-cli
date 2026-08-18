@@ -13,10 +13,10 @@ import (
 // hubCredentialEnv writes a silta credentials file into a fresh temp directory
 // and returns the environment pointing SILTA_CONFIG_DIR at it. Pass an empty
 // expiresAt to omit the expires_at field.
-func hubCredentialEnv(t *testing.T, expiresAt string) []string {
+func hubCredentialEnv(t *testing.T, hubURL, expiresAt string) []string {
 	t.Helper()
 	dir := t.TempDir()
-	creds := "hub_url: https://hub.example.com\ntoken: test-token-123\nusername: test-user\n"
+	creds := "hub_url: " + hubURL + "\ntoken: test-token-123\nusername: test-user\n"
 	if expiresAt != "" {
 		creds += "expires_at: \"" + expiresAt + "\"\n"
 	}
@@ -59,7 +59,7 @@ func TestHubCliCredentialValid(t *testing.T) {
 	os.Chdir("..")
 
 	future := time.Now().Add(1 * time.Hour).UTC().Format(time.RFC3339)
-	code, out, errOut := runCli(t, "hub cli-credential", hubCredentialEnv(t, future))
+	code, out, errOut := runCli(t, "hub cli-credential", hubCredentialEnv(t, "https://hub.example.com", future))
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d (stdout: %q, stderr: %q)", code, out, errOut)
 	}
@@ -83,7 +83,7 @@ func TestHubCliCredentialExpired(t *testing.T) {
 	os.Chdir("..")
 
 	past := time.Now().Add(-1 * time.Hour).UTC().Format(time.RFC3339)
-	env := hubCredentialEnv(t, past)
+	env := hubCredentialEnv(t, "https://hub.example.com", past)
 	code, out, errOut := runCli(t, "hub cli-credential", env)
 	if code == 0 {
 		t.Fatalf("expected non-zero exit for expired credentials, got 0 (stdout: %q)", out)

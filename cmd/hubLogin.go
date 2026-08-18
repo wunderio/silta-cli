@@ -83,10 +83,8 @@ configuration under 'hub.url'.`,
 func syncKubeconfig(creds *common.Credentials) error {
 	client := common.NewHubClient(creds.HubURL, creds.Token)
 
-	var resp struct {
-		Clusters []common.SiltaCluster `json:"clusters"`
-	}
-	if _, err := client.GetJSON("/api/cli/clusters", &resp); err != nil {
+	resp, err := common.FetchHubClusters(client)
+	if err != nil {
 		return err
 	}
 

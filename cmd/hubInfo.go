@@ -36,11 +36,8 @@ var hubInfoCmd = &cobra.Command{
 		}
 
 		client := common.NewHubClient(creds.HubURL, creds.Token)
-		var resp struct {
-			Username string                `json:"username"`
-			Clusters []common.SiltaCluster `json:"clusters"`
-		}
-		if _, err := client.GetJSON("/api/cli/clusters", &resp); err != nil {
+		resp, err := common.FetchHubClusters(client)
+		if err != nil {
 			fmt.Printf("\nServer verification failed: %s\n", err)
 			return
 		}
@@ -56,7 +53,11 @@ var hubInfoCmd = &cobra.Command{
 			if ns == "" {
 				ns = "(none)"
 			}
-			fmt.Printf("  silta-%s [namespace: %s]\n", cluster.ID, ns)
+			if cluster.KubernetesVersion == "" {
+				fmt.Printf("  silta-%s [namespace: %s]\n", cluster.ID, ns)
+			} else {
+				fmt.Printf("  silta-%s [namespace: %s, kubernetes: %s]\n", cluster.ID, ns, cluster.KubernetesVersion)
+			}
 		}
 	},
 }

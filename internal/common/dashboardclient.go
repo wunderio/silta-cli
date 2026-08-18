@@ -88,6 +88,22 @@ func (c *HubClient) doJSON(method, path string, body interface{}, out interface{
 	return resp.StatusCode, nil
 }
 
+// HubClustersResponse is the response of GET /api/cli/clusters.
+type HubClustersResponse struct {
+	Username string         `json:"username"`
+	Clusters []SiltaCluster `json:"clusters"`
+}
+
+// FetchHubClusters returns the clusters the authenticated user may access via
+// the CLI, along with the identity the hub reports for the token.
+func FetchHubClusters(client *HubClient) (*HubClustersResponse, error) {
+	resp := &HubClustersResponse{}
+	if _, err := client.GetJSON("/api/cli/clusters", resp); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // apiError extracts an error message from a non-2xx JSON response.
 func apiError(resp *http.Response) error {
 	var body struct {
