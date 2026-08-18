@@ -10,8 +10,9 @@ import (
 
 // SiltaCluster describes a hub-proxied cluster the CLI can access.
 type SiltaCluster struct {
-	ID     string `json:"id"`
-	Server string `json:"server"`
+	ID        string `json:"id"`
+	Server    string `json:"server"`
+	Namespace string `json:"namespace"`
 }
 
 // contextName returns the kubeconfig context/cluster/user name for a cluster id.
@@ -54,7 +55,7 @@ func UpdateKubeconfig(clusters []SiltaCluster) (string, error) {
 		config.Contexts[name] = &clientcmdapi.Context{
 			Cluster:   name,
 			AuthInfo:  name,
-			Namespace: "",
+			Namespace: cluster.Namespace,
 		}
 	}
 

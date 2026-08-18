@@ -11,8 +11,20 @@ import (
 )
 
 // ConfigDir returns the silta CLI configuration directory, creating it if it
-// does not yet exist.
+// does not yet exist. The directory can be overridden with the SILTA_CONFIG_DIR
+// environment variable (used by tests and custom installs).
 func ConfigDir() string {
+	if dir := os.Getenv("SILTA_CONFIG_DIR"); dir != "" {
+		_, err := os.Stat(dir)
+		if !os.IsExist(err) {
+			err = os.MkdirAll(dir, 0700)
+			if err != nil {
+				log.Fatalf("Error creating config directory, %s", err)
+			}
+		}
+		return dir
+	}
+
 	// Default configuration subpath
 	siltaConfigDir := ".config/silta"
 

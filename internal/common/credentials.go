@@ -32,7 +32,7 @@ func LoadCredentials() (*Credentials, error) {
 	data, err := os.ReadFile(credentialsPath())
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("not logged in: run 'silta login' first")
+			return nil, fmt.Errorf("not logged in: run 'silta hub login' first")
 		}
 		return nil, err
 	}

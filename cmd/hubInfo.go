@@ -52,7 +52,11 @@ var hubInfoCmd = &cobra.Command{
 		}
 		fmt.Printf("Cluster access (%d):\n", len(resp.Clusters))
 		for _, cluster := range resp.Clusters {
-			fmt.Printf("  silta-%s\n", cluster.ID)
+			ns := cluster.Namespace
+			if ns == "" {
+				ns = "(none)"
+			}
+			fmt.Printf("  silta-%s [namespace: %s]\n", cluster.ID, ns)
 		}
 	},
 }

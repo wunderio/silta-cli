@@ -32,6 +32,12 @@ machines use --device to complete the login using a short code instead.
 The Silta hub URL can be provided with --hub-url or stored in the
 configuration under 'hub.url'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if cmd.Flags().Changed("hub-url") && loginHubURL != "" {
+			if err := saveHubURL(loginHubURL); err != nil {
+				fmt.Printf("Warning: could not persist hub URL: %s\n", err)
+			}
+		}
+
 		hubURL := resolveHubURL()
 		if hubURL == "" {
 			fmt.Println("Error: no Silta hub URL configured. Pass --hub-url or run 'silta config set hub.url <url>'.")
@@ -110,14 +116,33 @@ type cliTokenResult struct {
 
 // resolveHubURL determines the hub URL from the flag or config.
 func resolveHubURL() string {
-	if loginHubURL != "" {
-		return loginHubURL
+	raw := loginHubURL
+	if raw == "" {
+		store := common.ConfigStore()
+		raw = store.GetString("hub.url")
 	}
-	configStore := common.ConfigStore()
-	if v := configStore.GetString("hub.url"); v != "" {
-		return v
+	if raw == "" {
+		return ""
 	}
-	return ""
+	return applyBackendSuffix(raw)
+}
+
+// applyBackendSuffix appends the hub backend path for remote hubs; local
+// proxies serve the hub directly at the root.
+func applyBackendSuffix(raw string) string {
+	u, err := url.Parse(raw)
+	if err == nil && u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost" {
+		return strings.TrimRight(raw, "/") + "/backend"
+	}
+	return raw
+}
+
+// saveHubURL persists the hub URL to the CLI configuration so future
+// 'silta hub login' runs do not need the --hub-url flag.
+func saveHubURL(raw string) error {
+	store := common.ConfigStore()
+	store.Set("hub.url", raw)
+	return store.WriteConfig()
 }
 
 // randomState returns a URL-safe random string used to guard the loopback flow.
@@ -256,7 +281,7 @@ func runDeviceLogin(client *common.HubClient) (*cliTokenResult, error) {
 }
 
 func init() {
-	hubLoginCmd.Flags().StringVar(&loginHubURL, "hub-url", "", "Silta hub URL (overrides config 'hub.url')")
+	hubLoginCmd.Flags().StringVar(&loginHubURL, "hub-url", "", "Silta hub URL (overrides config 'hub.url'; the value is saved to config)")
 	hubLoginCmd.Flags().BoolVar(&loginDevice, "device", false, "Use device code flow instead of opening a browser")
 	hubCmd.AddCommand(hubLoginCmd)
 }
