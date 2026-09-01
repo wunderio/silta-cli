@@ -5,7 +5,7 @@ Silta configuration commands
 ### Synopsis
 
 Silta configuration commands, allows setting and getting configuration values. 
-Configuration is persistent and is stored in file "/home/jancis/.config/silta/config.yaml".
+Configuration is persistent and is stored in file "/home/ubuntu/.config/silta/config.yaml".
 
 ```
 silta config [flags]
