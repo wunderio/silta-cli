@@ -191,26 +191,30 @@ var ciReleaseValidateCmd = &cobra.Command{
 				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				namespace, siltaConfig, extraNoAuthIPs, vpcNativeOverride, extraClusterType)
 
-			cmd := exec.Command("bash", "-c", command)
-			// StdOutPipe omitted to avoid exposing secrets
-			cmdErrReader, err := cmd.StderrPipe()
-			if err != nil {
-				log.Fatal("Error (stderr pipe): ", err)
-				return
-			}
-			errScanner := bufio.NewScanner(cmdErrReader)
-			go func() {
-				for errScanner.Scan() {
-					fmt.Printf("ERROR: %s\n", errScanner.Text())
+			if debug {
+				fmt.Printf("Command (not executed): %s\n", command)
+			} else {
+				cmd := exec.Command("bash", "-c", command)
+				// StdOutPipe omitted to avoid exposing secrets
+				cmdErrReader, err := cmd.StderrPipe()
+				if err != nil {
+					log.Fatal("Error (stderr pipe): ", err)
+					return
 				}
-			}()
-			err = cmd.Start()
-			if err != nil {
-				log.Fatal("Error (Start): ", err)
-			}
-			err = cmd.Wait()
-			if err != nil {
-				log.Fatal("Error (Wait): ", err)
+				errScanner := bufio.NewScanner(cmdErrReader)
+				go func() {
+					for errScanner.Scan() {
+						fmt.Printf("ERROR: %s\n", errScanner.Text())
+					}
+				}()
+				err = cmd.Start()
+				if err != nil {
+					log.Fatal("Error (Start): ", err)
+				}
+				err = cmd.Wait()
+				if err != nil {
+					log.Fatal("Error (Wait): ", err)
+				}
 			}
 
 		} else {
