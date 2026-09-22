@@ -2,6 +2,8 @@ package cmd_test
 
 import (
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -443,5 +445,45 @@ func TestReleaseDeployCmd(t *testing.T) {
 	CliExecTest(t, command, environment, testString, false)
 
 	// Change dir back to previous
+	os.Chdir(wd)
+}
+
+// A branch name containing shell metacharacters must stay inside its
+// single-quoted assignment in the generated release scripts. Before escaping,
+// the quote closed the literal and the rest ran as shell code.
+func TestReleaseBranchnameEscaping(t *testing.T) {
+
+	// Go to main directory
+	wd, _ := os.Getwd()
+	os.Chdir("..")
+
+	branchname := `--branchname "feature/x'; echo pwned; #"`
+
+	// deploy and diff print the generated script in debug mode, so the escaped
+	// assignments can be checked directly. Environment name is derived from the
+	// branch name and escaped the same way.
+	testString := `SILTA_ENVIRONMENT_NAME='feature/x'\''; echo pwned; #'
+			BRANCHNAME='feature/x'\''; echo pwned; #'`
+	for _, subcommand := range []string{"deploy", "diff"} {
+		command := `ci release ` + subcommand + ` \
+			--namespace default \
+			--release-name 'test' \
+			--chart-name drupal \
+			--php-image-url php-image \
+			--nginx-image-url nginx-image \
+			--shell-image-url shell-image \
+			` + branchname + ` \
+			--debug`
+		CliExecTest(t, command, []string{}, testString, false)
+	}
+
+	// validate runs its helm dry-run even in debug mode and hides the script,
+	// so assert on behaviour instead: the injected echo must not run.
+	command := `ci release validate --namespace default --release-name 'test' --chart-name drupal ` + branchname + ` --debug`
+	out, _ := exec.Command("bash", "-c", cliBinaryName+" "+command+" 2>&1").CombinedOutput()
+	if strings.Contains(string(out), "pwned") {
+		t.Errorf("branch name escaped the single-quoted assignment in validate:\n%s", out)
+	}
+
 	os.Chdir(wd)
 }

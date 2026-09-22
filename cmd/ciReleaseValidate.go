@@ -188,7 +188,7 @@ var ciReleaseValidateCmd = &cobra.Command{
 				
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				namespace, siltaConfig, extraNoAuthIPs, vpcNativeOverride, extraClusterType)
 
 			cmd := exec.Command("bash", "-c", command)
