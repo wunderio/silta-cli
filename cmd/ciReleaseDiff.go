@@ -194,7 +194,7 @@ var ciReleaseDiffCmd = &cobra.Command{
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS}`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname, nginxImageUrl,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname), nginxImageUrl,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				namespace, siltaConfig, helmFlags)
 			pipedExec(command, "", "ERROR: ", debug)
@@ -249,7 +249,7 @@ var ciReleaseDiffCmd = &cobra.Command{
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS}`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, namespace,
 				extraNoAuthIPs, vpcNativeOverride, extraClusterType,
@@ -352,7 +352,7 @@ var ciReleaseDiffCmd = &cobra.Command{
 				--values "${SILTA_CONFIG}" \
 				${EXTRA_HELM_FLAGS}`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				phpImageUrl, nginxImageUrl, shellImageUrl,
 				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,

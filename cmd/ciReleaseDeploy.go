@@ -250,7 +250,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				--timeout "${DEPLOYMENT_TIMEOUT}" \
 				--wait`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname, nginxImageUrl,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname), nginxImageUrl,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,
 				namespace, siltaConfig, helmFlags, deploymentTimeout)
 			pipedExec(command, "", "ERROR: ", debug)
@@ -367,7 +367,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				rm -f helm-output.log || true
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, namespace,
 				extraNoAuthIPs, vpcNativeOverride, extraClusterType,
@@ -565,7 +565,7 @@ var ciReleaseDeployCmd = &cobra.Command{
 				rm -f helm-output.log || true
 				`,
 				releaseName, chartName, chartRepository, chartVersionOverride,
-				siltaEnvironmentName, branchname,
+				common.EscapeSingleQuoted(siltaEnvironmentName), common.EscapeSingleQuoted(branchname),
 				phpImageUrl, nginxImageUrl, shellImageUrl,
 				repositoryUrl, gitAuthUsername, gitAuthPassword,
 				clusterDomain, extraNoAuthIPs, vpcNativeOverride, extraClusterType,

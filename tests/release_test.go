@@ -445,3 +445,36 @@ func TestReleaseDeployCmd(t *testing.T) {
 	// Change dir back to previous
 	os.Chdir(wd)
 }
+
+// A branch name containing shell metacharacters must stay inside its
+// single-quoted assignment in the generated release scripts. Before escaping,
+// the quote closed the literal and the rest ran as shell code.
+func TestReleaseBranchnameEscaping(t *testing.T) {
+
+	// Go to main directory
+	wd, _ := os.Getwd()
+	os.Chdir("..")
+
+	branchname := `--branchname "feature/x'; echo pwned; #"`
+
+	// All three subcommands print the generated script in debug mode, so the
+	// escaped assignments can be checked directly. Environment name is derived
+	// from the branch name and escaped the same way.
+	testString := `SILTA_ENVIRONMENT_NAME='feature/x'\''; echo pwned; #'
+			BRANCHNAME='feature/x'\''; echo pwned; #'`
+	for _, subcommand := range []string{"deploy", "diff", "validate"} {
+		imageFlags := ""
+		if subcommand != "validate" {
+			imageFlags = `--php-image-url php-image --nginx-image-url nginx-image --shell-image-url shell-image`
+		}
+		command := `ci release ` + subcommand + ` \
+			--namespace default \
+			--release-name 'test' \
+			--chart-name drupal ` + imageFlags + ` \
+			` + branchname + ` \
+			--debug`
+		CliExecTest(t, command, []string{}, testString, false)
+	}
+
+	os.Chdir(wd)
+}
