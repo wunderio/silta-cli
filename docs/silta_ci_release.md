@@ -28,6 +28,7 @@ silta ci release [flags]
 * [silta ci release delete-resources](silta_ci_release_delete-resources.md)	 - Delete orphaned release resources
 * [silta ci release deploy](silta_ci_release_deploy.md)	 - Deploy release
 * [silta ci release diff](silta_ci_release_diff.md)	 - Diff release resources
+* [silta ci release downscale](silta_ci_release_downscale.md)	 - Downscale a release
 * [silta ci release environmentname](silta_ci_release_environmentname.md)	 - Return environment name
 * [silta ci release info](silta_ci_release_info.md)	 - Print release information
 * [silta ci release list](silta_ci_release_list.md)	 - List releases

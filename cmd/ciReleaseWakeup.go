@@ -11,7 +11,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/wunderio/silta-cli/internal/common"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // gcp auth provider
 
 	helmAction "helm.sh/helm/v3/pkg/action"
@@ -25,7 +28,11 @@ var ciReleaseWakeupCmd = &cobra.Command{
 		releaseName, _ := cmd.Flags().GetString("release-name")
 		namespace, _ := cmd.Flags().GetString("namespace")
 
-		clientset, err := common.GetKubeClient()
+		kubeConfig, err := common.GetKubeConfig()
+		if err != nil {
+			log.Fatalf("failed to get kube config: %v", err)
+		}
+		clientset, err := kubernetes.NewForConfig(kubeConfig)
 		if err != nil {
 			log.Fatalf("failed to get kube client: %v", err)
 		}
@@ -48,6 +55,10 @@ var ciReleaseWakeupCmd = &cobra.Command{
 			"release",
 			"app.kubernetes.io/instance",
 		}
+
+		// Resume MariaDBs (if any) before scaling up, otherwise the operator does not
+		// reconcile and the MariaDB statefulset pods never become ready
+		setMariaDBsSuspended(clientset, kubeConfig, namespace, releaseName, selectorLabels, false, false)
 
 		// Restore deployments to original state
 		// Select all deployments with label "release: releaseName" and "app.kubernetes.io/instance: releaseName"
@@ -374,9 +385,27 @@ var ciReleaseWakeupCmd = &cobra.Command{
 			}
 		}
 
-		// Gather ingress hostnames
+		// Remove upscaler proxy if no services in namespace are pointing to it
+		redirected_list, err := services_client.List(context.TODO(), v1.ListOptions{
+			LabelSelector: "auto-downscale/redirected=true",
+		})
+		if err != nil {
+			log.Fatalf("Error getting the list of redirected services: %s", err)
+		}
+		if len(redirected_list.Items) == 0 {
+			err = clientset.AppsV1().Deployments(namespace).Delete(context.TODO(), upscalerProxyName, v1.DeleteOptions{})
+			if err == nil {
+				log.Printf("Removed upscaler proxy in %s", namespace)
+			} else if !apierrors.IsNotFound(err) {
+				log.Fatalf("Error removing upscaler proxy: %s", err)
+			}
+		}
+
+		// Gather ingress hostnames and clear the downscaled state, restarting the
+		// downscaler min-age countdown so the release can be downscaled again later
 		hostnames := []string{}
 		ingress_client := clientset.NetworkingV1().Ingresses(namespace)
+		seenIngresses := map[types.UID]bool{}
 		for _, l := range selectorLabels {
 			selector := l + "=" + releaseName
 			ingress_list, err := ingress_client.List(context.TODO(), v1.ListOptions{
@@ -387,6 +416,23 @@ var ciReleaseWakeupCmd = &cobra.Command{
 			}
 
 			for _, v := range ingress_list.Items {
+
+				if !seenIngresses[v.UID] && v.Annotations["auto-downscale/down"] != "" {
+					seenIngresses[v.UID] = true
+					ingressPatch, _ := json.Marshal(map[string]interface{}{
+						"metadata": map[string]interface{}{
+							"annotations": map[string]interface{}{
+								"auto-downscale/last-update": time.Now().UTC().Format("2006-01-02T15:04:05.000Z07:00"),
+								"auto-downscale/down":        nil,
+							},
+						},
+					})
+					_, err := ingress_client.Patch(context.TODO(), v.Name, types.MergePatchType, ingressPatch, v1.PatchOptions{})
+					if err != nil {
+						log.Fatalf("Error updating ingress %s: %s", v.Name, err)
+					}
+					log.Printf("Updated last-update annotation on %s ingress", v.Name)
+				}
 
 				// Add ingress hostnames to list
 				for _, rule := range v.Spec.Rules {
