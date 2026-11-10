@@ -445,3 +445,23 @@ func TestReleaseDeployCmd(t *testing.T) {
 	// Change dir back to previous
 	os.Chdir(wd)
 }
+
+func TestReleaseDownscaleCmd(t *testing.T) {
+
+	// Go to main directory
+	wd, _ := os.Getwd()
+	os.Chdir("..")
+
+	// Required flags and placeholder overrides are available
+	command := "ci release downscale --help"
+	environment := []string{}
+	testString := `--placeholder-proxy-image`
+	CliExecTest(t, command, environment, testString, false)
+
+	command = "ci release downscale --help"
+	testString = `--dry-run`
+	CliExecTest(t, command, environment, testString, false)
+
+	// Change dir back to previous
+	os.Chdir(wd)
+}
