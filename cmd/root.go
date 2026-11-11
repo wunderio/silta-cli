@@ -69,7 +69,7 @@ func init() {
 
 func bufferedExec(command string, debug bool) {
 	if debug {
-		fmt.Sprintf("Command (not executed): %s\n", command)
+		fmt.Printf("Command (not executed): %s\n", command)
 	} else {
 		out, err := exec.Command("bash", "-c", command).CombinedOutput()
 		fmt.Printf("%s\n", out)
