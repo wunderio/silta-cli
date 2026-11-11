@@ -32,4 +32,5 @@ silta hub [flags]
 * [silta hub kubeconfig](silta_hub_kubeconfig.md)	 - Update kubeconfig with Silta cluster access
 * [silta hub login](silta_hub_login.md)	 - Log in to a Silta hub
 * [silta hub logout](silta_hub_logout.md)	 - Log out of the Silta hub
+* [silta hub mcp](silta_hub_mcp.md)	 - Connect AI clients (Claude Code, opencode, Cursor, VS Code) to the Silta MCP server
 
