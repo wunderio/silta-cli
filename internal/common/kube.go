@@ -10,6 +10,19 @@ import (
 )
 
 func GetKubeClient() (*kubernetes.Clientset, error) {
+	config, err := GetKubeConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func GetKubeConfig() (*rest.Config, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, errors.New("cannot read user home dir")
@@ -27,10 +40,5 @@ func GetKubeClient() (*kubernetes.Clientset, error) {
 			return nil, err
 		}
 	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	return clientset, nil
+	return config, nil
 }
